@@ -1,7 +1,7 @@
 // Import test function from compoentn/groupType.js
-import { test } from './components/groupType.js';
+import { weaponUsed } from './components/weaponUsed.js';
 
-$(document).ready(function() {
+$(document).ready(function () {
     // Load ajax components
     $('.hitmap-container').load('components/hitmap.html');
     $('.groupType-container').load('components/groupType.html');
@@ -10,5 +10,7 @@ $(document).ready(function() {
 
 let dataCSV = d3.csv("./cleaned_data.csv");
 
-// Call function from groupType.js
-test(dataCSV);
+dataCSV.then(function (data) {
+    // Call function from groupType.js
+    weaponUsed(data, 'weapsubtype1_txt', null, '2001');
+});
