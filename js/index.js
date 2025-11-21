@@ -1,6 +1,6 @@
 $(document).ready(function() {
     // Load ajax components
-    $('.hitmap-container').load('components/hitmap.html');
+    $('.hitMap-container').load('components/hitMap.html');
     $('.groupType-container').load('components/groupType.html');
     $('.weaponUsed-container').load('components/weaponUsed.html');
 });
