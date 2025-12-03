@@ -1,5 +1,4 @@
-// Import test function from compoentn/groupType.js
-import { test } from './components/groupType.js';
+import { renderHeatMap } from './components/hitMap.js';
 
 $(document).ready(function() {
     // Load ajax components
@@ -10,5 +9,6 @@ $(document).ready(function() {
 
 let dataCSV = d3.csv("./cleaned_data.csv");
 
-// Call function from groupType.js
-test(dataCSV);
+let dates = [1971];
+
+renderHeatMap(dataCSV,null, dates);
