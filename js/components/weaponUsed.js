@@ -19,10 +19,11 @@ export function weaponUsed(data, type = "weapsubtype1_txt", countries = null, ye
     let filteredData = data;
     if (years !== null && Array.isArray(years) && years.length > 0) {
         if (years.length === 1) {
-            filteredData = data.filter(d => parseInt(d.iyear) === years[0]);
+            const targetYear = parseInt(years[0]);
+            filteredData = data.filter(d => parseInt(d.iyear) === targetYear);
         } else if (years.length === 2) {
-            const startYear = Math.min(years[0], years[1]);
-            const endYear = Math.max(years[0], years[1]);
+            const startYear = Math.min(parseInt(years[0]), parseInt(years[1]));
+            const endYear = Math.max(parseInt(years[0]), parseInt(years[1]));
             filteredData = data.filter(d => {
                 const year = parseInt(d.iyear);
                 return year >= startYear && year <= endYear;
@@ -35,7 +36,6 @@ export function weaponUsed(data, type = "weapsubtype1_txt", countries = null, ye
 
     // If single country selected, show pie chart
     if (countries && Array.isArray(countries) && countries.length === 1) {
-        console.log("Single country selected for pie chart:", countries[0]);
         const countryData = filteredData.filter(d => d.country_txt === countries[0]);
         const weaponStats = minifyDataPieChart(countryData, type);
         renderPieChart(weaponStats, countries[0]);

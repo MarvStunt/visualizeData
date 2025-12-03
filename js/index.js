@@ -15,5 +15,5 @@ dataCSV.then(function (data) {
     // weaponUsed(data, 'weapsubtype1_txt', null, ['2001', '2017']);
     // weaponUsed(data, 'weapsubtype1_txt', null, ['2001']);
     // weaponUsed(data, 'weapsubtype1_txt', null, []);
-    weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], []);
+    weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
 });
