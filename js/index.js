@@ -17,6 +17,13 @@ dataCSV.then(function (data) {
     // weaponUsed(data, 'weapsubtype1_txt', null, []);
     weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
 
+
+    // Alex
+    let dates = [1971];
+    let countries = ["France", "United Kingdom", "Germany"];
+    renderHeatMap(data, countries, dates);
+    // Fin Alex
+
     // Créer le tooltip pour les annotations
     const tooltip = d3.select("body").append("div")
         .attr("class", "tooltip-map")
@@ -185,13 +192,6 @@ dataCSV.then(function (data) {
             });
         }
     }
-
-
-    // Alex
-    let dates = [1971];
-    let countries = ["France", "United Kingdom", "Germany"];
-    renderHeatMap(data, countries, dates);
-    // Fin Alex
 });
 
 // Fonction pour changer la couleur d'un pays par son index
