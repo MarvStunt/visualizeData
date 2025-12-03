@@ -12,5 +12,8 @@ let dataCSV = d3.csv("./cleaned_data.csv");
 
 dataCSV.then(function (data) {
     // Call function from groupType.js
-    weaponUsed(data, 'weapsubtype1_txt', null, '2001');
+    // weaponUsed(data, 'weapsubtype1_txt', null, ['2001', '2017']);
+    // weaponUsed(data, 'weapsubtype1_txt', null, ['2001']);
+    // weaponUsed(data, 'weapsubtype1_txt', null, []);
+    weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], []);
 });

@@ -1,5 +1,7 @@
 const barplotLengthThreshold = 10;
 const stackedBarplotLengthThreshold = 5;
+const topWeaponsCount = 4; // Show only top 4 weapons + Other
+const pieChartWeaponsLimit = 8; // Limit for pie chart weapons
 
 /**
  * Render a bar chart showing weapon usage statistics.
@@ -7,23 +9,207 @@ const stackedBarplotLengthThreshold = 5;
  * @param {Array} data 
  * @param {string} type Can be "weaptype1_txt" or "weapsubtype1_txt" 
  * @param {Array} countries Optional array of country names to filter
- * @param {number} year Optional year to filter data
+ * @param {Array|null} years Optional year filter:
+ *   - null or [] : all data (no filter)
+ *   - [2020] : only year 2020
+ *   - [2020, 2025] : range from 2020 to 2025 (inclusive)
  */
-export function weaponUsed(data, type = "weapsubtype1_txt", countries = null, year = null) {
-    // Filter by year if provided
+export function weaponUsed(data, type = "weapsubtype1_txt", countries = null, years = null) {
+    // Filter by year(s) if provided
     let filteredData = data;
-    if (year !== null) {
-        filteredData = data.filter(d => d.iyear === year);
+    if (years !== null && Array.isArray(years) && years.length > 0) {
+        if (years.length === 1) {
+            filteredData = data.filter(d => parseInt(d.iyear) === years[0]);
+        } else if (years.length === 2) {
+            const startYear = Math.min(years[0], years[1]);
+            const endYear = Math.max(years[0], years[1]);
+            filteredData = data.filter(d => {
+                const year = parseInt(d.iyear);
+                return year >= startYear && year <= endYear;
+            });
+        }
     }
 
-    // let weaponStats = minifyDataBarChart(filteredData, type);
-    // renderBarChart(weaponStats);
+    // Clear previous charts
+    clearCharts();
 
-    console.log(filteredData);
+    // If single country selected, show pie chart
+    if (countries && Array.isArray(countries) && countries.length === 1) {
+        console.log("Single country selected for pie chart:", countries[0]);
+        const countryData = filteredData.filter(d => d.country_txt === countries[0]);
+        const weaponStats = minifyDataPieChart(countryData, type);
+        renderPieChart(weaponStats, countries[0]);
+    } else {
+        // Multiple countries or no filter: show stacked bar chart
+        renderStackedBarChart(minifyDataStackedBarChart(filteredData, type, countries));
+    }
+}
 
-    let weaponStatsPerCountry = minifyDataStackedBarChart(filteredData, type, countries);
-    console.log(weaponStatsPerCountry);
-    renderStackedBarChart(weaponStatsPerCountry);
+/**
+ * Clear all charts from container
+ */
+function clearCharts() {
+    d3.select(".weaponUsed-container svg").remove();
+    d3.select(".weaponUsed-container .stacked-chart").remove();
+    d3.select(".weaponUsed-container .pie-chart").remove();
+    d3.selectAll(".weapon-tooltip").remove();
+}
+
+/**
+ * Minify data for pie chart (single country)
+ * 
+ * @param {Array} data - Filtered data for single country
+ * @param {string} type - Can be "weaptype1_txt" or "weapsubtype1_txt"
+ * @returns {Array} - Array of weapon stats
+ */
+function minifyDataPieChart(data, type = "weapsubtype1_txt") {
+    let weaponTypes = d3.group(data, d => d[type]);
+    let weaponStats = Array.from(weaponTypes).map(([weapon, attacks]) => {
+        const weaponName = weapon || "Unknown";
+        const totalKills = attacks.reduce((sum, d) => {
+            const kills = parseInt(d.nkill) || 0;
+            return sum + kills;
+        }, 0);
+        const successCount = attacks.filter(d => parseInt(d.success) === 1).length;
+        const successRate = attacks.length > 0 ? (successCount / attacks.length * 100).toFixed(1) : 0;
+
+        return {
+            weapon: weaponName,
+            count: attacks.length,
+            kills: totalKills,
+            weaponType: attacks[0].weaptype1_txt || "Unknown",
+            weaponSubType: weaponName,
+            successRate: parseFloat(successRate),
+            successCount: successCount
+        };
+    });
+
+    // Sort by count descending
+    weaponStats.sort((a, b) => b.count - a.count);
+
+    // Keep only top weapons, group rest into "Other"
+    if (weaponStats.length > pieChartWeaponsLimit) {
+        const topWeapons = weaponStats.slice(0, pieChartWeaponsLimit);
+        const otherWeapons = weaponStats.slice(pieChartWeaponsLimit);
+        const otherStats = {
+            weapon: "Other",
+            count: otherWeapons.reduce((sum, w) => sum + w.count, 0),
+            kills: otherWeapons.reduce((sum, w) => sum + w.kills, 0),
+            weaponType: "Other",
+            weaponSubType: "Other weapons combined",
+            successRate: 0,
+            successCount: otherWeapons.reduce((sum, w) => sum + w.successCount, 0)
+        };
+
+        // Calculate success rate for "Other"
+        if (otherStats.count > 0) {
+            otherStats.successRate = parseFloat((otherStats.successCount / otherStats.count * 100).toFixed(1));
+        }
+
+        topWeapons.push(otherStats);
+        weaponStats = topWeapons;
+    }
+
+    return weaponStats;
+}
+
+/**
+ * Render pie chart for single country
+ * 
+ * @param {Array} data - Weapon stats array
+ * @param {string} countryName - Name of the country
+ */
+function renderPieChart(data, countryName) {
+    const container = d3.select(".weaponUsed-container");
+    const containerWidth = container.node().clientWidth;
+    const containerHeight = container.node().clientHeight;
+    const margin = 40;
+    const radius = Math.min(containerWidth, containerHeight) / 2 - margin;
+
+    // Create SVG
+    const svg = container.append("svg")
+        .attr("class", "pie-chart")
+        .attr("width", containerWidth).attr("height", containerHeight)
+        .append("g")
+        .attr("transform", `translate(${containerWidth / 2}, ${containerHeight / 2})`);
+
+    const colorScale = d3.scaleOrdinal().domain(data.map(d => d.weapon)).range(d3.schemeSet3);
+    const pie = d3.pie().value(d => d.count).sort(null);
+    const arc = d3.arc().innerRadius(0).outerRadius(radius);
+    const arcHover = d3.arc().innerRadius(0).outerRadius(radius + 10);
+
+    // Create tooltip
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "weapon-tooltip")
+        .style("position", "absolute")
+        .style("background", "rgba(0, 0, 0, 0.8)")
+        .style("color", "white")
+        .style("padding", "10px")
+        .style("border-radius", "5px")
+        .style("font-size", "12px")
+        .style("pointer-events", "none")
+        .style("opacity", 0);
+
+    // Create pie slices
+    const slices = svg.selectAll(".slice").data(pie(data)).enter().append("g").attr("class", "slice");
+
+    // Add paths
+    slices.append("path")
+        .attr("d", arc)
+        .attr("fill", d => colorScale(d.data.weapon))
+        .attr("stroke", "white")
+        .attr("stroke-width", 2)
+        .style("cursor", "pointer")
+        .on("mouseover", function (event, d) {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr("d", arcHover);
+
+            const formatNumber = d3.format(",");
+            tooltip.style("opacity", 1)
+                .html(`
+                    <strong>Weapon Type:</strong> ${d.data.weaponType}<br/>
+                    <strong>Weapon Sub Type:</strong> ${d.data.weaponSubType}<br/>
+                    <strong>Attacks:</strong> ${formatNumber(d.data.count)}<br/>
+                    <strong>Kills:</strong> ${formatNumber(d.data.kills)}<br/>
+                    <strong>Success Rate:</strong> ${d.data.successRate}%
+                `)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        })
+        .on("mouseout", function () {
+            d3.select(this)
+                .transition()
+                .duration(200)
+                .attr("d", arc);
+
+            tooltip.style("opacity", 0);
+        });
+
+    // Add percentage labels on slices
+    const totalCount = d3.sum(data, d => d.count);
+    slices.append("text")
+        .attr("transform", d => `translate(${arc.centroid(d)})`)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "11px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black")
+        .text(d => {
+            const percentage = (d.data.count / totalCount * 100).toFixed(1);
+            return percentage > 5 ? `${percentage}%` : "";
+        });
+
+
+    // Add title
+    svg.append("text")
+        .attr("x", 0)
+        .attr("y", -containerHeight / 2 + 15)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "16px")
+        .attr("font-weight", "bold")
+        .text(`Weapon Usage in ${countryName}`);
 }
 
 /**
@@ -179,6 +365,16 @@ function renderBarChart(data) {
  * @returns 
  */
 function minifyDataStackedBarChart(data, type = "weapsubtype1_txt", countries = null) {
+    // First, find the top 4 weapon types globally
+    let globalWeaponCounts = d3.group(data, d => d[type]);
+    let weaponRanking = Array.from(globalWeaponCounts).map(([weapon, attacks]) => ({
+        weapon: weapon || "Unknown",
+        count: attacks.length
+    }));
+
+    weaponRanking.sort((a, b) => b.count - a.count);
+    const topWeapons = weaponRanking.slice(0, topWeaponsCount).map(w => w.weapon);
+
     // Group data by country first
     let countriesData = d3.group(data, d => d.country_txt);
 
@@ -187,8 +383,12 @@ function minifyDataStackedBarChart(data, type = "weapsubtype1_txt", countries = 
         // Group attacks by weapon type for this country
         let weaponTypes = d3.group(attacks, d => d[type]);
 
-        // Convert to object with weapon counts
+        // Convert to object with weapon counts - only top 4 + Other
         let weapons = {};
+        let otherCount = 0;
+        let otherKills = 0;
+        let otherSuccessCount = 0;
+        let otherTotalCount = 0;
         weaponTypes.forEach((countAttacks, weapon) => {
             const weaponName = weapon || "Unknown";
             const totalKills = countAttacks.reduce((sum, d) => {
@@ -196,13 +396,38 @@ function minifyDataStackedBarChart(data, type = "weapsubtype1_txt", countries = 
                 return sum + kills;
             }, 0);
 
-            weapons[weaponName] = {
-                count: countAttacks.length,
-                kills: totalKills,
-                weaponType: countAttacks[0].weaptype1_txt || "Unknown",
-                weaponSubType: weaponName
-            };
+            const successCount = countAttacks.filter(d => parseInt(d.success) === 1).length;
+            const successRate = countAttacks.length > 0 ? (successCount / countAttacks.length * 100).toFixed(1) : 0;
+            if (topWeapons.includes(weaponName)) {
+                weapons[weaponName] = {
+                    count: countAttacks.length,
+                    kills: totalKills,
+                    weaponType: countAttacks[0].weaptype1_txt || "Unknown",
+                    weaponSubType: weaponName,
+                    successRate: parseFloat(successRate),
+                    successCount: successCount
+                };
+            } else {
+                // Aggregate into "Other"
+                otherCount += countAttacks.length;
+                otherKills += totalKills;
+                otherSuccessCount += successCount;
+                otherTotalCount += countAttacks.length;
+            }
         });
+
+        // Add "Other" category if there are any
+        if (otherCount > 0) {
+            const otherSuccessRate = otherTotalCount > 0 ? (otherSuccessCount / otherTotalCount * 100).toFixed(1) : 0;
+            weapons["Other"] = {
+                count: otherCount,
+                kills: otherKills,
+                weaponType: "Other",
+                weaponSubType: "Other weapons combined",
+                successRate: parseFloat(otherSuccessRate),
+                successCount: otherSuccessCount
+            };
+        }
 
         return {
             country: country || "Unknown",
@@ -312,10 +537,8 @@ function renderStackedBarChart(data) {
     // Add rectangles for each segment - HORIZONTAL BARS
     groups.selectAll("rect")
         .data(d => d)
-        .enter()
-        .append("rect")
-        .attr("y", d => yScale(d.data.country))
-        .attr("x", d => xScale(d[0]))
+        .enter().append("rect")
+        .attr("y", d => yScale(d.data.country)).attr("x", d => xScale(d[0]))
         .attr("width", d => xScale(d[1]) - xScale(d[0]))
         .attr("height", yScale.bandwidth())
         .on("mouseover", function (event, d) {
@@ -329,7 +552,8 @@ function renderStackedBarChart(data) {
                         <strong>Weapon Type:</strong> ${countryData.weaponType}<br/>
                         <strong>Weapon Sub Type:</strong> ${countryData.weaponSubType}<br/>
                         <strong>Attacks:</strong> ${countryData.count}<br/>
-                        <strong>Kills:</strong> ${countryData.kills}
+                        <strong>Kills:</strong> ${countryData.kills}<br/>
+                        <strong>Success Rate:</strong> ${countryData.successRate}%
                     `)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 10) + "px");
@@ -351,10 +575,13 @@ function renderStackedBarChart(data) {
         .attr("font-weight", "bold")
         .text("Country");
 
+    // Format numbers: 1000 -> 1k, 1000000 -> 1M
+    const formatNumber = d3.format("~s");
+
     // Add X axis (attacks)
     svg.append("g")
         .attr("transform", `translate(0, ${height})`)
-        .call(d3.axisBottom(xScale))
+        .call(d3.axisBottom(xScale).tickFormat(formatNumber))
         .append("text")
         .attr("x", width / 2)
         .attr("y", margin.bottom - 10)
