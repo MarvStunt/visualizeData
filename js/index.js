@@ -137,6 +137,54 @@ dataCSV.then(function (data) {
             console.error("Error loading data:", error);
         });
     });
+
+    // Mateus
+    const defaultCountry = ['France', 'Germany', 'Italy'];
+    // Define year range (set to null for no filtering)
+    const startYear = "2010"; // "2010"
+    const endYear = "2015";   // "2015"
+
+    const sunburst = new SunburstDiagram('groupType-chart', data, defaultCountry, startYear, endYear);
+
+    // Render initial chart
+    sunburst.render();
+
+    // Setup slider event listener
+    const slider = document.getElementById('groupType-slider');
+    const percentageDisplay = document.getElementById('groupType-percentage');
+    const controlsContainer = document.querySelector('.groupType-controls');
+
+    // Hide slider if multiple countries are selected
+    if (sunburst.simplifiedHierarchy) {
+        if (controlsContainer) {
+            controlsContainer.style.display = 'none';
+        }
+        return;
+    }
+
+    // Count unique groups after filtering
+    const filteredData = sunburst.data;
+    const uniqueGroups = new Set();
+    filteredData.forEach(d => {
+        if (d.gname && d.gname !== "Unknown" && d.gname !== "Undefined") {
+            uniqueGroups.add(d.gname);
+        }
+    });
+
+    // Hide slider if less than 5 groups
+    if (uniqueGroups.size < 5) {
+        if (controlsContainer) {
+            controlsContainer.style.display = 'none';
+        }
+    } else {
+        if (slider) {
+            slider.addEventListener('input', function (e) {
+                const percentage = parseInt(e.target.value);
+                percentageDisplay.textContent = percentage + '%';
+                sunburst.updateGroupPercentage(percentage);
+            });
+        }
+    }
 });
 
 // Fonction pour changer la couleur d'un pays par son index
