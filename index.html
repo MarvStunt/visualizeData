@@ -16,22 +16,25 @@
 
     <!-- JqueryImport -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="./js/index.js" defer></script>
-    <script src="./lib/d3.v7.js" defer></script>
+    <script src="./lib/d3.v7.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+
 
     <!-- Will be replaced later -->
     <script src="./js/components/groupType.js" defer></script>
     <script src="./js/components/weaponUsed.js" defer></script>
     <script src="./js/components/hitmap.js" defer></script>
+    <script type="module" src="./js/index.js" defer></script>
 </head>
 
 <body>
 
     <div class="map-container">
         <!-- Global map here -->
+         <div class="d3-geomap" id="map"></div>
     </div>
 
-    <div class="bottom-nav hidden">
+    <div class="bottom-nav hidden" id="bottom-nav">
 
         <div class="bottom-chart hitmap-container">
             <!-- Hitmap component here -->
