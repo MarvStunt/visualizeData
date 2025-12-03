@@ -10,5 +10,6 @@ $(document).ready(function() {
 let dataCSV = d3.csv("./cleaned_data.csv");
 
 let dates = [1971];
+let countries = ["France", "United Kingdom", "Germany"];
 
-renderHeatMap(dataCSV,null, dates);
+renderHeatMap(dataCSV,countries, dates);

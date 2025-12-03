@@ -1,5 +1,5 @@
 // fonction qui rend un graphique Bar Chart selon le nombre d'attaques au fil du temps
-export function renderHeatMap(data, country ,dates) {
+export function renderHeatMap(data, countries ,dates) {
     data.then(function(data) {
 
         let chartContainer = d3.select('.hitMap-container');
@@ -10,8 +10,9 @@ export function renderHeatMap(data, country ,dates) {
         const innerWidth = Math.max(0, containerWidth - margin.left - margin.right);
         const innerHeight = Math.max(0, containerHeight - margin.top - margin.bottom);
 
-        if (country != null) {
-            data = data.filter(d => d.country_txt === country);
+        if (Array.isArray(countries) && countries.length > 0) {
+            const countrySet = new Set(countries);
+            data = data.filter(d => countrySet.has(d.country_txt));
         }
 
         // filtrer les données selon les dates fournies
