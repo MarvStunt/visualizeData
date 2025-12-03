@@ -9,6 +9,7 @@ $(document).ready(function () {
     $('.weaponUsed-container').load('components/weaponUsed.html');
 });
 
+let isBottomNavVisible = false;
 let dataCSV = d3.csv("./cleaned_data.csv");
 dataCSV.then(function (data) {
     // Call function from groupType.js
@@ -99,6 +100,7 @@ dataCSV.then(function (data) {
                     }
                     d3.select(this).attr("stroke", newColor);
                     updateView();
+                    changeStateContainer();
                 })
                 .on("mouseover", function (event, d) {
                     d3.select(this).transition()
@@ -166,6 +168,8 @@ dataCSV.then(function (data) {
         if (controlsContainer) {
             controlsContainer.style.display = 'none';
         }
+
+        changeStateContainer();
         return;
     }
 
@@ -192,6 +196,8 @@ dataCSV.then(function (data) {
             });
         }
     }
+
+    changeStateContainer();
 });
 
 // Fonction pour changer la couleur d'un pays par son index
@@ -205,5 +211,17 @@ function updateView() {
         document.getElementById("bottom-nav").classList.remove("hidden");
     } else {
         document.getElementById("bottom-nav").classList.add("hidden");
+    }
+}
+
+
+function changeStateContainer() {
+    console.log(isBottomNavVisible);
+    if (isBottomNavVisible) {
+        $('#bottom-nav').show();
+        isBottomNavVisible = false;
+    } else {
+        $('#bottom-nav').hide();
+        isBottomNavVisible = true;
     }
 }
