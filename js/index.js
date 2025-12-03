@@ -1,9 +1,10 @@
 // Import test function from compoentn/groupType.js
 import { weaponUsed } from './components/weaponUsed.js';
+import { renderHeatMap } from './components/hitMap.js';
 
 $(document).ready(function () {
     // Load ajax components
-    $('.hitmap-container').load('components/hitmap.html');
+    $('.hitMap-container').load('components/hitMap.html');
     $('.groupType-container').load('components/groupType.html');
     $('.weaponUsed-container').load('components/weaponUsed.html');
 });
@@ -15,7 +16,6 @@ dataCSV.then(function (data) {
     // weaponUsed(data, 'weapsubtype1_txt', null, ['2001']);
     // weaponUsed(data, 'weapsubtype1_txt', null, []);
     weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
-
 
     // Créer le tooltip pour les annotations
     const tooltip = d3.select("body").append("div")
@@ -185,6 +185,13 @@ dataCSV.then(function (data) {
             });
         }
     }
+
+
+    // Alex
+    let dates = [1971];
+    let countries = ["France", "United Kingdom", "Germany"];
+    renderHeatMap(data, countries, dates);
+    // Fin Alex
 });
 
 // Fonction pour changer la couleur d'un pays par son index
