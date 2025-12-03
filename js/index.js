@@ -219,9 +219,11 @@ function changeStateContainer() {
     console.log(isBottomNavVisible);
     if (isBottomNavVisible) {
         $('#bottom-nav').show();
+        $('#black-filter').show();
         isBottomNavVisible = false;
     } else {
         $('#bottom-nav').hide();
+        $('#black-filter').hide();
         isBottomNavVisible = true;
     }
 }
