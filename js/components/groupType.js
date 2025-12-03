@@ -4,13 +4,18 @@
  */
 
 class SunburstDiagram {
-    constructor(containerId, data, country, year) {
+    constructor(containerId, data, country = null, startYear = null, endYear = null) {
         this.container = document.getElementById(containerId);
         this.rawData = data;
-        this.data = this.filterByCountry(data, country);
+        this.startYear = startYear;
+        this.endYear = endYear;
+        // Convert single country string to array, or keep as array if already an array
+        this.countries = this.normalizeCountries(country);
+        this.data = this.filterByCountriesAndDate(data, this.countries, startYear, endYear);
         this.currentCountry = country;
-        this.currentYear = year;
-        this.data = this.filterByYear(this.data, year);
+        // Determine if simplified hierarchy should be used based on number of countries in filtered data
+        this.simplifiedHierarchy = this.countries && this.countries.length > 1;
+        this.groupPercentage = 10;
         this.width = this.container.clientWidth || 800;
         this.height = this.container.clientHeight || 800;
         this.radius = Math.min(this.width, this.height) / 2;
@@ -18,6 +23,107 @@ class SunburstDiagram {
         // D3 selections
         this.svg = null;
         this.g = null;
+    }
+
+    /**
+     * Normalize country input to an array
+     * @param {String|Array|null} country - Single country, array of countries, or null
+     * @returns {Array} Array of countries or empty array if null
+     */
+    normalizeCountries(country) {
+        if (!country || country === '') {
+            return [];
+        }
+        if (Array.isArray(country)) {
+            return country.filter(c => c && c !== '');
+        }
+        return [country];
+    }
+
+    /**
+     * Filter data by countries and date range
+     * @param {Array} rawData - Array of data objects from CSV
+     * @param {Array} countries - Array of country names to filter by
+     * @param {String|Number} startYear - Start year for filtering (null = no limit)
+     * @param {String|Number} endYear - End year for filtering (null = no limit)
+     * @returns {Array} Filtered data
+     */
+    filterByCountriesAndDate(rawData, countries, startYear = null, endYear = null) {
+        let filtered = rawData;
+
+        // Filter by countries - only include specified countries
+        if (countries && countries.length > 0) {
+            filtered = filtered.filter(d => countries.includes(d.country_txt));
+        }
+
+        // Filter by year range if provided
+        if (startYear !== null || endYear !== null) {
+            const start = startYear !== null ? parseInt(startYear) : null;
+            const end = endYear !== null ? parseInt(endYear) : null;
+
+            filtered = filtered.filter(d => {
+                const year = parseInt(d.iyear);
+
+                // If only startYear is provided, filter to exactly that year
+                if (start !== null && end === null) {
+                    return year === start;
+                }
+
+                // If both years are provided, filter to range
+                if (start !== null && year < start) {
+                    return false;
+                }
+                if (end !== null && year > end) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        return filtered;
+    }
+
+    /**
+     * Filter data by country and date range
+     * @param {Array} rawData - Array of data objects from CSV
+     * @param {String} country - Country name to filter by
+     * @param {String|Number} startYear - Start year for filtering (null = no limit)
+     * @param {String|Number} endYear - End year for filtering (null = no limit)
+     * @returns {Array} Filtered data
+     */
+    filterByCountryAndDate(rawData, country, startYear = null, endYear = null) {
+        let filtered = rawData;
+
+        // Filter by country
+        if (country && country !== '') {
+            filtered = filtered.filter(d => d.country_txt === country);
+        }
+
+        // Filter by year range if provided
+        if (startYear !== null || endYear !== null) {
+            const start = startYear !== null ? parseInt(startYear) : null;
+            const end = endYear !== null ? parseInt(endYear) : null;
+
+            filtered = filtered.filter(d => {
+                const year = parseInt(d.iyear);
+
+                // If only startYear is provided, filter to exactly that year
+                if (start !== null && end === null) {
+                    return year === start;
+                }
+
+                // If both years are provided, filter to range
+                if (start !== null && year < start) {
+                    return false;
+                }
+                if (end !== null && year > end) {
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        return filtered;
     }
 
     /**
@@ -34,18 +140,90 @@ class SunburstDiagram {
     }
 
     /**
-     * Filter data by year
-     * @param {Array} rawData - Array of data objects from CSV
-     * @param {String} year - Year to filter by
-     * @returns {Array} Filtered data
+     * Count unique countries in the data
+     * @param {Array} data - Array of data objects
+     * @returns {Number} Number of unique countries
      */
-    filterByYear(rawData, year) {
-        if (!year || year === '') {
-            return rawData;
+    countUniqueCountries(data) {
+        const countries = new Set();
+        data.forEach(d => {
+            if (d.country_txt) {
+                countries.add(d.country_txt);
+            }
+        });
+        return countries.size;
+    }
+
+    /**
+     * Create dynamic categories for numPeople values
+     * @param {Array} numPeopleValues - Array of numeric values
+     * @returns {Array} Array of category boundaries [min, max]
+     */
+    createDynamicCategories(numPeopleValues) {
+        // Filter out "Undefined" and convert to numbers
+        const numericValues = numPeopleValues
+            .filter(v => v !== "Undefined")
+            .map(v => parseInt(v))
+            .filter(v => !isNaN(v))
+            .sort((a, b) => a - b);
+
+        if (numericValues.length === 0) {
+            return [];
         }
-        // Convert year to string to match CSV data type
-        const yearStr = String(year);
-        return rawData.filter(d => String(d.iyear) === yearStr);
+
+        const min = numericValues[0];
+        const max = numericValues[numericValues.length - 1];
+
+        const categories = [];
+        let currentMin = min;
+
+        // Generate categories with exponential scaling
+        while (currentMin <= max) {
+            let categoryMax;
+
+            // Determine category max based on magnitude
+            if (currentMin < 10) {
+                categoryMax = 10;
+            } else if (currentMin < 100) {
+                categoryMax = 100;
+            } else if (currentMin < 1000) {
+                categoryMax = 1000;
+            } else if (currentMin < 10000) {
+                categoryMax = 10000;
+            } else {
+                categoryMax = currentMin * 10;
+            }
+
+            // Ensure the last category goes at least to max
+            if (categoryMax > max && currentMin < max) {
+                categoryMax = max;
+            }
+
+            categories.push([currentMin, categoryMax]);
+            currentMin = categoryMax;
+        }
+
+        return categories;
+    }
+
+    /**
+     * Get category for a numeric value
+     * @param {Number} value - Numeric value
+     * @param {Array} categories - Array of [min, max] category boundaries
+     * @returns {String} Category label
+     */
+    getCategoryLabel(value, categories) {
+        const numValue = parseInt(value);
+        if (isNaN(numValue)) return "Undefined";
+
+        for (const [min, max] of categories) {
+            if (numValue >= min && numValue <= max) {
+                return `${min}-${max}`;
+            }
+        }
+
+        // If value is outside all categories, return as is
+        return value.toString();
     }
 
     /**
@@ -54,6 +232,95 @@ class SunburstDiagram {
      * @returns {Object} Hierarchical object for d3.hierarchy
      */
     buildHierarchy(rawData) {
+        if (this.simplifiedHierarchy) {
+            return this.buildSimplifiedHierarchy(rawData);
+        } else {
+            return this.buildFullHierarchy(rawData);
+        }
+    }
+
+    /**
+     * Build simplified hierarchy: Country -> Terrorist Group -> Success
+     * @param {Array} rawData - Array of data objects from CSV
+     * @returns {Object} Hierarchical object for d3.hierarchy
+     */
+    buildSimplifiedHierarchy(rawData) {
+        const root = {
+            children: []
+        };
+
+        const countryMap = new Map();
+
+        // Group data by country -> group -> success
+        rawData.forEach(d => {
+            const country = d.country_txt || "Undefined";
+            const groupName = d.gname || "Undefined";
+            const successRate = d.success;
+
+            // Skip invalid data
+            if (groupName === "Unknown" || groupName === "Undefined") {
+                return;
+            }
+
+            // Handle success rate: only process if success === 1, skip if 0, warn if missing
+            if (successRate === undefined || successRate === null || successRate === '') {
+                console.warn('Missing success rate data for row:', d);
+                return;
+            }
+
+            // Skip if success rate is 0
+            if (successRate === 0 || successRate === '0') {
+                return;
+            }
+
+            // Only process if success rate is 1
+            if (successRate !== 1 && successRate !== '1') {
+                return;
+            }
+
+            // Get or create country node
+            let countryNode = countryMap.get(country);
+            if (!countryNode) {
+                countryNode = {
+                    name: country,
+                    children: []
+                };
+                countryMap.set(country, countryNode);
+                root.children.push(countryNode);
+            }
+
+            // Get or create group node within country
+            let groupNode = countryNode.children.find(g => g.name === groupName);
+            if (!groupNode) {
+                groupNode = {
+                    name: groupName,
+                    children: []
+                };
+                countryNode.children.push(groupNode);
+            }
+
+            // Get or create success node within group
+            let successNode = groupNode.children.find(s => s.name === successRate);
+            if (!successNode) {
+                successNode = {
+                    name: successRate,
+                    value: 1
+                };
+                groupNode.children.push(successNode);
+            } else {
+                successNode.value += 1;
+            }
+        });
+
+        return root;
+    }
+
+    /**
+     * Build full hierarchy: Terrorist Group -> numPeople -> gunType -> success
+     * @param {Array} rawData - Array of data objects from CSV
+     * @returns {Object} Hierarchical object for d3.hierarchy
+     */
+    buildFullHierarchy(rawData) {
         // Create root node
         const root = {
             children: []
@@ -62,14 +329,87 @@ class SunburstDiagram {
         // Create a map to store terrorist groups
         const terroristGroupMap = new Map();
 
+        // First pass: count occurrences of each terrorist group
+        const groupCounts = new Map();
+        rawData.forEach(d => {
+            if (d.gname == "Unknown" || d.gname == "Undefined") {
+                // skip this line without cutting the loop
+                return;
+            }
+            const groupName = d.gname;
+            groupCounts.set(groupName, (groupCounts.get(groupName) || 0) + 1);
+        });
+
+        // Get top X% of groups by frequency
+        const sortedGroups = Array.from(groupCounts.entries())
+            .sort((a, b) => b[1] - a[1]);
+
+        // If there are less than 5 groups, use all groups; otherwise apply percentage filter
+        let topGroups;
+        if (sortedGroups.length < 5) {
+            topGroups = new Set(sortedGroups.map(entry => entry[0]));
+        } else {
+            const topPercentile = Math.max(1, Math.ceil(sortedGroups.length * (this.groupPercentage / 100)));
+            topGroups = new Set(sortedGroups.slice(0, topPercentile).map(entry => entry[0]));
+        }
+
+        // Build a map of groups to their numPeople values first (excluding Undefined)
+        const groupNumPeopleMap = new Map();
+        topGroups.forEach(groupName => {
+            const numPeopleValues = [];
+            rawData.forEach(d => {
+                if (d.gname === groupName) {
+                    const numPeople = (d.nperps === "-99.0" || !d.nperps) ? "Undefined" : d.nperps;
+                    // Only count defined values
+                    if (numPeople !== "Undefined" && !numPeopleValues.includes(numPeople)) {
+                        numPeopleValues.push(numPeople);
+                    }
+                }
+            });
+            groupNumPeopleMap.set(groupName, numPeopleValues);
+        });
+
+        // Second pass: build hierarchy only with top X% groups
         rawData.forEach(d => {
             const groupName = d.gname || "Undefined";
-            const numPeople = (d.nperps === "-99.0" || !d.nperps) ? "Undefined" : d.nperps;
-            const gunType = d.weaptype1_txt || "Undefined";
-            const successRate = d.success || 0;
-            console.log(`Group: ${groupName}, Num People: ${numPeople}, Gun Type: ${gunType}, Success Rate: ${successRate}`);
 
-            // Get or create region
+            // Skip groups not in top X%
+            if (!topGroups.has(groupName)) {
+                return;
+            }
+
+            const numPeopleRaw = (d.nperps === "-99.0" || !d.nperps) ? "Undefined" : d.nperps;
+            const gunType = d.weaptype1_txt || "Undefined";
+            const successRate = d.success;
+
+            // Handle success rate: only process if success === 1, skip if 0, warn if missing
+            if (successRate === undefined || successRate === null || successRate === '') {
+                console.warn('Missing success rate data for row:', d);
+                return;
+            }
+
+            // Skip if success rate is 0
+            if (successRate === 0 || successRate === '0') {
+                return;
+            }
+
+            // Only process if success rate is 1
+            if (successRate !== 1 && successRate !== '1') {
+                return;
+            }
+
+            // Check if this group needs categorization
+            const numPeopleValues = groupNumPeopleMap.get(groupName);
+            const hasMoreThan5Children = numPeopleValues.length > 5;
+
+            let numPeople = numPeopleRaw;
+            if (hasMoreThan5Children && numPeopleRaw !== "Undefined") {
+                // Create categories and map value to category
+                const categories = this.createDynamicCategories(numPeopleValues);
+                numPeople = this.getCategoryLabel(numPeopleRaw, categories);
+            }
+
+            // Get or create terrorist group
             let terroristGroupNode = terroristGroupMap.get(groupName);
             if (!terroristGroupNode) {
                 terroristGroupNode = {
@@ -105,9 +445,12 @@ class SunburstDiagram {
             if (!successRateNode) {
                 successRateNode = {
                     name: successRate,
-                    value: 0
+                    value: 1
                 };
                 gunTypeNode.children.push(successRateNode);
+            } else {
+                // Increment the count for this success rate
+                successRateNode.value += 1;
             }
 
         });
@@ -209,33 +552,72 @@ class SunburstDiagram {
         // Clear previous content
         d3.select(this.container).html('');
 
-        // Create message container
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'no-data-message';
-        messageDiv.innerHTML = `
-            <div class="no-data-content">
-                <p class="no-data-title">No Data Available</p>
-                <p class="no-data-text">No terrorist attack data found for:</p>
-                <p class="no-data-details">
-                    ${this.currentCountry ? `Country: <strong>${this.currentCountry}</strong>` : 'All countries'}<br/>
-                    ${this.currentYear ? `Year: <strong>${this.currentYear}</strong>` : 'All years'}
-                </p>
-                <p class="no-data-suggestion">Please try selecting different filters.</p>
-            </div>
-        `;
-        this.container.appendChild(messageDiv);
+        // Use the NoDataMessage component
+        NoDataMessage.display(this.container.id, this.currentCountry);
     }
 
     /**
-     * Update the country and year filters and re-render
-     * @param {String} country - New country filter
-     * @param {String} year - New year filter
+     * Update the country filter and re-render
+     * @param {String|Array} country - New country filter (single country, array of countries, or null)
+     * @param {String|Number} startYear - Start year for filtering (optional)
+     * @param {String|Number} endYear - End year for filtering (optional)
      */
-    updateFilters(country, year) {
+    updateFilters(country, startYear = null, endYear = null) {
         this.currentCountry = country;
-        this.currentYear = year;
-        this.data = this.filterByCountry(this.rawData, country);
-        this.data = this.filterByYear(this.data, year);
+        this.startYear = startYear;
+        this.endYear = endYear;
+        this.countries = this.normalizeCountries(country);
+        this.data = this.filterByCountriesAndDate(this.rawData, this.countries, startYear, endYear);
+        // Recalculate simplified hierarchy based on number of countries
+        this.simplifiedHierarchy = this.countries && this.countries.length > 1;
+        // Update slider visibility based on simplifiedHierarchy
+        this.updateSliderVisibility();
+        // Clear previous content (SVG and message)
+        d3.select(this.container).html('');
+        this.svg = null;
+        this.render();
+    }
+
+    /**
+     * Update slider visibility based on hierarchy type and group count
+     */
+    updateSliderVisibility() {
+        const controlsContainer = document.querySelector('.groupType-controls');
+        const slider = document.getElementById('groupType-slider');
+
+        // Hide slider if multiple countries are selected
+        if (this.simplifiedHierarchy) {
+            if (controlsContainer) {
+                controlsContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        // For single country, check group count
+        const uniqueGroups = new Set();
+        this.data.forEach(d => {
+            if (d.gname && d.gname !== "Unknown" && d.gname !== "Undefined") {
+                uniqueGroups.add(d.gname);
+            }
+        });
+
+        if (uniqueGroups.size < 5) {
+            if (controlsContainer) {
+                controlsContainer.style.display = 'none';
+            }
+        } else {
+            if (controlsContainer) {
+                controlsContainer.style.display = 'block';
+            }
+        }
+    }
+
+    /**
+     * Update the group percentage and re-render
+     * @param {Number} percentage - Percentage of groups to display (0-100)
+     */
+    updateGroupPercentage(percentage) {
+        this.groupPercentage = Math.max(1, Math.min(100, percentage)); // Clamp between 1-100
         // Clear previous content (SVG and message)
         d3.select(this.container).html('');
         this.svg = null;
@@ -284,11 +666,51 @@ function hideTooltip() {
 document.addEventListener('DOMContentLoaded', function () {
     // Load CSV data
     d3.csv('cleaned_data.csv').then(data => {
-        const defaultCountry = 'France';
-        const defaultYear = '2010';
-        const sunburst = new SunburstDiagram('groupType-chart', data, defaultCountry, defaultYear);
+        const defaultCountry = ['France', 'Germany', 'Italy'];
+        // Define year range (set to null for no filtering)
+        const startYear = "2010"; // "2010"
+        const endYear = "2015";   // "2015"
+
+        const sunburst = new SunburstDiagram('groupType-chart', data, defaultCountry, startYear, endYear);
 
         // Render initial chart
         sunburst.render();
+
+        // Setup slider event listener
+        const slider = document.getElementById('groupType-slider');
+        const percentageDisplay = document.getElementById('groupType-percentage');
+        const controlsContainer = document.querySelector('.groupType-controls');
+
+        // Hide slider if multiple countries are selected
+        if (sunburst.simplifiedHierarchy) {
+            if (controlsContainer) {
+                controlsContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        // Count unique groups after filtering
+        const filteredData = sunburst.data;
+        const uniqueGroups = new Set();
+        filteredData.forEach(d => {
+            if (d.gname && d.gname !== "Unknown" && d.gname !== "Undefined") {
+                uniqueGroups.add(d.gname);
+            }
+        });
+
+        // Hide slider if less than 5 groups
+        if (uniqueGroups.size < 5) {
+            if (controlsContainer) {
+                controlsContainer.style.display = 'none';
+            }
+        } else {
+            if (slider) {
+                slider.addEventListener('input', function (e) {
+                    const percentage = parseInt(e.target.value);
+                    percentageDisplay.textContent = percentage + '%';
+                    sunburst.updateGroupPercentage(percentage);
+                });
+            }
+        }
     });
 });
