@@ -6,6 +6,7 @@
 class SunburstDiagram {
     constructor(containerId, data, country = null, startYear = null, endYear = null) {
         this.container = document.getElementById(containerId);
+        this.$container = $('#' + containerId);
         this.rawData = data;
         this.startYear = startYear;
         this.endYear = endYear;
@@ -471,7 +472,7 @@ class SunburstDiagram {
         // Build hierarchy
         const hierarchyData = this.buildHierarchy(this.data);
 
-        // Create SVG
+        // Create SVG with D3
         this.svg = d3.select(this.container)
             .append('svg')
             .attr('width', this.width)
@@ -510,6 +511,9 @@ class SunburstDiagram {
             .join('g')
             .attr('class', 'slice');
 
+        // Capture 'this' context for use in event handlers
+        const self = this;
+
         // Add paths for each slice
         slices.append('path')
             .attr('class', 'arc')
@@ -528,17 +532,13 @@ class SunburstDiagram {
             .style('stroke-width', 1)
             .style('opacity', 0.8)
             .on('mouseover', function (event, d) {
-                d3.select(this)
-                    .style('opacity', 1)
-
+                d3.select(this).style('opacity', 1)
                 // Show tooltip
-                showTooltip(event, d);
+                self.showTooltip(event, d);
             })
             .on('mouseout', function () {
-                d3.select(this)
-                    .style('opacity', 0.8)
-
-                hideTooltip();
+                d3.select(this).style('opacity', 0.8)
+                self.hideTooltip();
             });
 
         // Add click handler for zooming TODO: implement zooming
@@ -580,16 +580,16 @@ class SunburstDiagram {
 
     /**
      * Update slider visibility based on hierarchy type and group count
+     * If we select multiple countries, hide the slider
      */
     updateSliderVisibility() {
-        const controlsContainer = document.querySelector('.groupType-controls');
-        const slider = document.getElementById('groupType-slider');
+        const $controlsContainer = $('.groupType-controls');
+        const $slider = $('#groupType-slider');
+        const $percentageDisplay = $('#groupType-percentage');
 
         // Hide slider if multiple countries are selected
         if (this.simplifiedHierarchy) {
-            if (controlsContainer) {
-                controlsContainer.style.display = 'none';
-            }
+            $controlsContainer.hide();
             return;
         }
 
@@ -601,14 +601,18 @@ class SunburstDiagram {
             }
         });
 
+        // Hide slider if less than 5 groups
         if (uniqueGroups.size < 5) {
-            if (controlsContainer) {
-                controlsContainer.style.display = 'none';
-            }
+            $controlsContainer.hide();
         } else {
-            if (controlsContainer) {
-                controlsContainer.style.display = 'block';
-            }
+            $controlsContainer.show();
+
+            // Setup slider event listener using jQuery
+            $slider.off('input').on('input', (e) => {
+                const percentage = parseInt(e.target.value);
+                $percentageDisplay.text(percentage + '%');
+                this.updateGroupPercentage(percentage);
+            });
         }
     }
 
@@ -623,41 +627,42 @@ class SunburstDiagram {
         this.svg = null;
         this.render();
     }
-}
 
+    /**
+     * Show tooltip with data information
+     * @param {Event} event - Mouse event
+     * @param {Object} d - Data object
+     */
+    showTooltip(event, d) {
+        let $tooltip = $('#sunburst-tooltip');
+        if ($tooltip.length === 0) {
+            $tooltip = $('<div>')
+                .attr('id', 'sunburst-tooltip')
+                .css({
+                    position: 'absolute',
+                    background: 'rgba(0, 0, 0, 0.8)',
+                    color: 'white',
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    pointerEvents: 'none',
+                    zIndex: '1000'
+                }).appendTo('body');
+        }
 
-/**
- * Tooltip management
- */
-function showTooltip(event, d) {
-    let tooltip = document.getElementById('sunburst-tooltip');
-
-    if (!tooltip) {
-        tooltip = document.createElement('div');
-        tooltip.id = 'sunburst-tooltip';
-        tooltip.style.cssText = `
-            position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            pointer-events: none;
-            z-index: 1000;
-        `;
-        document.body.appendChild(tooltip);
+        let text = `<strong>${d.data.name}</strong>`;
+        if (d.value) text += `<br/>Count: ${d.value}`;
+        $tooltip.html(text)
+            .css({
+                left: (event.pageX + 10) + 'px',
+                top: (event.pageY + 10) + 'px'
+            }).show();
     }
 
-    let text = `<strong>${d.data.name}</strong>`;
-    if (d.value) text += `<br/>Count: ${d.value}`;
-
-    tooltip.innerHTML = text;
-    tooltip.style.left = (event.pageX + 10) + 'px';
-    tooltip.style.top = (event.pageY + 10) + 'px';
-    tooltip.style.display = 'block';
-}
-
-function hideTooltip() {
-    const tooltip = document.getElementById('sunburst-tooltip');
-    if (tooltip) tooltip.style.display = 'none';
+    /**
+     * Hide tooltip
+     */
+    hideTooltip() {
+        $('#sunburst-tooltip').hide();
+    }
 }
