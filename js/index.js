@@ -1,29 +1,56 @@
 // Import test function from compoentn/groupType.js
 import { weaponUsed } from './components/weaponUsed.js';
-import { renderHeatMap } from './components/hitMap.js';
 
-$(document).ready(function () {
-    // Load ajax components
-    $('.hitMap-container').load('components/hitMap.html');
-    $('.groupType-container').load('components/groupType.html');
-    $('.weaponUsed-container').load('components/weaponUsed.html');
-});
+// Global variables to store component instances
+let heatmap = null;
+let sunburst = null;
 
 let isBottomNavVisible = false;
 let dataCSV = d3.csv("./cleaned_data.csv");
+
 dataCSV.then(function (data) {
-    // Call function from groupType.js
-    // weaponUsed(data, 'weapsubtype1_txt', null, ['2001', '2017']);
-    // weaponUsed(data, 'weapsubtype1_txt', null, ['2001']);
-    // weaponUsed(data, 'weapsubtype1_txt', null, []);
-    weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
+    $(document).ready(function () {
+        // Load ajax components with callbacks to initialize after loading
+        let componentsLoaded = 0;
+        const totalComponents = 3;
+        function checkAllComponentsLoaded() {
+            componentsLoaded++;
+            if (componentsLoaded === totalComponents) {
+                initializeAllComponents(data);
+            }
+        }
 
+        $('.heatMap-container').load('components/heatMap.html', checkAllComponentsLoaded);
+        $('.groupType-container').load('components/groupType.html', checkAllComponentsLoaded);
+        $('.weaponUsed-container').load('components/weaponUsed.html', checkAllComponentsLoaded);
+    });
 
-    // Alex
-    let dates = [1971];
-    let countries = ["France", "United Kingdom", "Germany"];
-    renderHeatMap(data, countries, dates);
-    // Fin Alex
+    // Function to initialize all components after HTML is loaded
+    function initializeAllComponents(data) {
+        // WeaponUsed
+        weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
+
+        // Alex - HeatMap
+        const heatmapCountries = ["France", "United Kingdom", "Germany"];
+        const heatmapStartYear = 1971;
+        const heatmapEndYear = null; // null = single year mode (heatmap)
+
+        heatmap = new HeatMap('heatMap-chart-container', data, heatmapCountries, heatmapStartYear, heatmapEndYear);
+        heatmap.render();
+        // Fin Alex
+
+        // Mateus - Sunburst
+        const defaultCountry = ['France'];
+        const startYear = "2010";
+        const endYear = "2015";
+
+        sunburst = new SunburstDiagram('groupType-chart', data, defaultCountry, startYear, endYear);
+        sunburst.render();
+        sunburst.updateSliderVisibility();
+        // Fin Mateus
+
+        changeStateContainer();
+    }
 
     // Créer le tooltip pour les annotations
     const tooltip = d3.select("body").append("div")
@@ -38,8 +65,8 @@ dataCSV.then(function (data) {
         .style("opacity", 0);
 
     $(document).ready(function () {
-        const width = document.getElementById("map").clientWidth;
-        const height = document.getElementById("map").clientHeight;
+        const width = $('#map').width();
+        const height = $('#map').height();
 
         const svg = d3.select("#map")
             .append("svg")
@@ -146,21 +173,6 @@ dataCSV.then(function (data) {
             console.error("Error loading data:", error);
         });
     });
-
-    // Mateus
-    // const defaultCountry = ['France', 'Germany', 'Italy'];
-    const defaultCountry = ['France']; // slider car beaucoup de groupes terroristes 
-    // Define year range (set to null for no filtering)
-    const startYear = "2010"; // "2010"
-    const endYear = "2015";   // "2015"
-
-    const sunburst = new SunburstDiagram('groupType-chart', data, defaultCountry, startYear, endYear);
-
-    // Render initial chart
-    sunburst.render();
-    sunburst.updateSliderVisibility();
-
-    changeStateContainer();
 });
 
 // Fonction pour changer la couleur d'un pays par son index
@@ -170,10 +182,10 @@ function changeCountryColor(countryIndex, color) {
 }
 
 function updateView() {
-    if (document.querySelectorAll(".selected-country").length > 0) {
-        document.getElementById("bottom-nav").classList.remove("hidden");
+    if ($('.selected-country').length > 0) {
+        $('#bottom-nav').removeClass('hidden');
     } else {
-        document.getElementById("bottom-nav").classList.add("hidden");
+        $('#bottom-nav').addClass('hidden');
     }
 }
 

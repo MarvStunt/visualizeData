@@ -5,8 +5,8 @@
 
 class SunburstDiagram {
     constructor(containerId, data, country = null, startYear = null, endYear = null) {
-        this.container = document.getElementById(containerId);
         this.$container = $('#' + containerId);
+        this.container = this.$container.length ? this.$container[0] : null;
         this.rawData = data;
         this.startYear = startYear;
         this.endYear = endYear;
@@ -17,8 +17,8 @@ class SunburstDiagram {
         // Determine if simplified hierarchy should be used based on number of countries in filtered data
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         this.groupPercentage = 10;
-        this.width = this.container.clientWidth || 800;
-        this.height = this.container.clientHeight || 800;
+        this.width = this.$container.width() || 800;
+        this.height = this.$container.height() || 800;
         this.radius = Math.min(this.width, this.height) / 2;
 
         // D3 selections
