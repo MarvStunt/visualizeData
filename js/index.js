@@ -1,9 +1,7 @@
-// Import test function from compoentn/groupType.js
-import { weaponUsed } from './components/weaponUsed.js';
-
 // Global variables to store component instances
 let heatmap = null;
 let sunburst = null;
+let weaponUsed = null;
 
 let isBottomNavVisible = false;
 let dataCSV = d3.csv("./cleaned_data.csv");
@@ -28,7 +26,8 @@ dataCSV.then(function (data) {
     // Function to initialize all components after HTML is loaded
     function initializeAllComponents(data) {
         // WeaponUsed
-        weaponUsed(data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
+        weaponUsed = new WeaponUsed('weaponUsed-chart-container', data, 'weapsubtype1_txt', ['Colombia'], ['2004', '2017']);
+        weaponUsed.render();
 
         // Alex - HeatMap
         const heatmapCountries = ["France", "United Kingdom", "Germany"];
