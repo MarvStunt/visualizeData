@@ -1,8 +1,31 @@
 :root {
-    /* basic colors of the app */
-    --white: #F9F9F9;
-    --border: #E5E5E5
+    --white: #E8E8E8;
+    --border: #C8C8C8;
+    --text-primary: #2E2E2E;
+    --text-secondary: #5A5A5A;
+    --text-tertiary: #7A7A7A;
+    --bg-primary: #F0F0F0;
+    --bg-secondary: #E2E2E2;
+    --bg-tertiary: #D4D4D4;
+    --shadow-light: rgba(0, 0, 0, 0.06);
+    --shadow-medium: rgba(0, 0, 0, 0.12);
+    --shadow-dark: rgba(0, 0, 0, 0.18);
 }
+
+body.dark-mode {
+    --white: #3A3A3A;
+    --border: #666666;
+    --text-primary: #E5E5E5;
+    --text-secondary: #BDBDBD;
+    --text-tertiary: #9B9B9B;
+    --bg-primary: #2E2E2E;
+    --bg-secondary: #3A3A3A;
+    --bg-tertiary: #4A4A4A;
+    --shadow-light: rgba(0, 0, 0, 0.25);
+    --shadow-medium: rgba(0, 0, 0, 0.4);
+    --shadow-dark: rgba(0, 0, 0, 0.6);
+}
+
 
 * {
     margin: 0;
@@ -21,14 +44,13 @@ body {
 body {
     display: flex;
     flex-direction: column;
-    background-color: transparent;
+    background-color: var(--white);
 }
 
-/* Main map container - takes up remaining space */
 .map-container {
     flex: 1;
     width: 100%;
-    background-color: var(--white);
+    background-color: var(--bg-primary);
     overflow: hidden;
 }
 
@@ -45,9 +67,9 @@ body {
     height: 450px;
     max-height: 450px;
     width: 100%;
-    background-color: var(--white);
+    background-color: var(--bg-secondary);
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -4px 12px var(--shadow-medium);
     z-index: 10;
     margin: 0;
 }
@@ -58,13 +80,21 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: transparent;    
+    background-color: transparent;
+    border-radius: 20px 20px 0 0;
+
 }
 
 .bottom-nav-header .title {
     font-size: 25px;
     font-weight: 600;
     padding: 10px;
+    color: var(--text-primary);
+}
+
+.bottom-nav-header p {
+    color: var(--text-secondary);
+    font-size: 14px;
 }
 
 .bottom-nav-header::after {
@@ -83,7 +113,7 @@ body {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    align-items: stretch; 
+    align-items: stretch;
     gap: 12px;
     margin: 12px;
     border-radius: 20px;
@@ -93,16 +123,40 @@ body {
 .bottom-chart {
     flex: 1;
     height: 100%;
-    background-color: white;
+    background-color: var(--bg-tertiary);
     border-radius: 6px;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 -4px 12px var(--shadow-light);
     overflow: hidden;
     transition: box-shadow 0.3s ease;
     border: 1px solid var(--border);
 }
 
 .bottom-chart:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 16px var(--shadow-dark);
+}
+
+#theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--border);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+#theme-toggle:hover {
+    box-shadow: 0 4px 12px var(--shadow-medium);
+    background-color: var(--bg-tertiary);
 }
 
 .hidden {

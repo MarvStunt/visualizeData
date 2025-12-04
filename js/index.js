@@ -1,6 +1,10 @@
 // Import test function from compoentn/groupType.js
 import { weaponUsed } from './components/weaponUsed.js';
 import { renderHeatMap } from './components/hitMap.js';
+import { ThemeManager } from './theme.js';
+
+// Initialize theme manager
+const themeManager = new ThemeManager();
 
 $(document).ready(function () {
     // Load ajax components
