@@ -131,7 +131,7 @@ body {
     z-index: 15;
 }
 
-.bottom-nav-toggle:hover {
+.toggle-arrow {
     transform: scale(1.1);
 }
 
