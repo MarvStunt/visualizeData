@@ -19,7 +19,7 @@ let currentFilters = {
 const themeManager = new ThemeManager();
 
 // Track if bottom nav is visible
-let isBottomNavVisible = false;
+let isBottomNavVisible = true;
 let dataCSV = d3.csv("./cleaned_data.csv");
 
 dataCSV.then(function (data) {
@@ -68,6 +68,14 @@ dataCSV.then(function (data) {
             // Update current filters with selected countries
             currentFilters.countries = selectedCountries;
 
+            // When countries are selected, update the date range sliders to min/max available data
+            if (selectedCountries.length > 0) {
+                const { minYear, maxYear } = getAvailableYearRange(data, selectedCountries);
+                filterCard.setYearRange(minYear, maxYear);
+                currentFilters.startYear = minYear;
+                currentFilters.endYear = maxYear;
+            }
+
             // Update all other components with new country selection
             updateComponents(data, selectedCountries, currentFilters.startYear, currentFilters.endYear);
 
@@ -86,11 +94,14 @@ dataCSV.then(function (data) {
         // Hide loader after all components are loaded
         hideLoader();
 
-        // Initially hide the bottom nav
-        hideBottomNav();
+        // Initially show the bottom nav (expanded, visible at startup to initialize sizes)
+        showBottomNav();
 
         // Add keyboard event listener for Escape key
         setupKeyboardEvents();
+
+        // Setup bottom nav toggle button
+        setupBottomNavToggle();
     }
 
     // Function to initialize components (called once at startup)
@@ -152,19 +163,27 @@ function updateView() {
 
 // Function to show the bottom navigation panel
 function showBottomNav() {
-    $('#bottom-nav').slideDown(300);
+    const $bottomNav = $('#bottom-nav');
+    $bottomNav.removeClass('hidden collapsed');
     $('#black-filter').fadeIn(300);
     isBottomNavVisible = true;
 }
 
 // Function to hide the bottom navigation panel
 function hideBottomNav() {
-    $('#bottom-nav').slideUp(300);
+    const $bottomNav = $('#bottom-nav');
+    $bottomNav.addClass('hidden');
     $('#black-filter').fadeOut(300);
     isBottomNavVisible = false;
 }
 
-// Function to toggle the bottom navigation panel
+// Function to toggle the bottom navigation panel (collapse/expand)
+function toggleBottomNavCollapse() {
+    const $bottomNav = $('#bottom-nav');
+    $bottomNav.toggleClass('collapsed');
+}
+
+// Function to toggle the bottom navigation panel (show/hide completely)
 function toggleBottomNav() {
     if (isBottomNavVisible) {
         hideBottomNav();
@@ -215,4 +234,12 @@ function getAvailableYearRange(data, countries) {
     const maxYear = Math.max(...years);
 
     return { minYear, maxYear };
+}
+
+// Setup bottom nav toggle button event listener
+function setupBottomNavToggle() {
+    $(document).on('click', '#bottom-nav-toggle', function (e) {
+        e.stopPropagation();
+        toggleBottomNavCollapse();
+    });
 }
