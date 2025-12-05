@@ -20,34 +20,44 @@
     <script src="https://d3js.org/topojson.v3.min.js"></script>
 
     <!-- Components -->
-    <script src="./js/components/noDataMessage.js"></script>
     <script src="./js/components/groupType.js"></script>
     <script src="./js/components/heatMap.js"></script>
+    <script src="./js/theme.js"></script>
     <script src="./js/components/weaponUsed.js"></script>
+    <script src="./js/components/noDataMessage.js"></script>
 
     <!-- Main script -->
     <script src="./js/index.js"></script>
 </head>
 
 <body>
-
+    <button id="theme-toggle" title="Toggle dark mode"></button>
+    <div class="black-filter hidden" id="black-filter"></div>
     <div class="map-container">
         <!-- Global map here -->
-         <div class="d3-geomap" id="map"></div>
+        <div class="d3-geomap" id="map"></div>
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
-
-        <div class="bottom-chart heatMap-container">
-            <!-- heatMap component here -->
+        <div class="bottom-nav-header">
+            <div>
+                <div class="title">A TITLE</div>
+                <p>SOME CONTENT</p>
+            </div>
         </div>
 
-        <div class="bottom-chart groupType-container">
-            <!-- Group Type component here -->
-        </div>
+        <div class="bottom-nav-charts">
+            <div class="bottom-chart heatMap-container">
+                <!-- heatMap component here -->
+            </div>
 
-        <div class="bottom-chart weaponUsed-container">
-            <!-- Weapon Used component here -->
+            <div class="bottom-chart groupType-container">
+                <!-- Group Type component here -->
+            </div>
+
+            <div class="bottom-chart weaponUsed-container">
+                <!-- Weapon Used component here -->
+            </div>
         </div>
     </div>
 
