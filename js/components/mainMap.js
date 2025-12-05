@@ -153,6 +153,7 @@ class MainMap {
         const isSelected = currentBorder !== "#999";
         const newColor = isSelected ? "#999" : "#6bFF6b";
         const countryName = d.properties.name;
+        console.log('Clicked country:', countryName);
         if (isSelected) {
             // Deselect country
             d3.select(element).classed("selected-country", false);
@@ -180,14 +181,10 @@ class MainMap {
      * @param {Element} element - DOM element
      */
     handleMouseOver(event, d, element) {
-        d3.select(element).transition()
-            .duration(200)
-            .attr("fill-opacity", 0.7);
-
+        d3.select(element).transition().duration(200).attr("fill-opacity", 0.7);
         const countryName = d.properties.name;
         const attacks = this.attackByCountry.get(countryName);
         let tooltipContent = `<strong>${countryName}</strong>`;
-
         if (attacks) {
             const totalKills = d3.sum(attacks, a => +a.nkill);
             const totalAttacks = attacks.length;
@@ -197,12 +194,8 @@ class MainMap {
             tooltipContent += `<br/>Aucune donnée`;
         }
 
-        this.tooltip.transition()
-            .duration(200)
-            .style("opacity", 0.9);
-        this.tooltip.html(tooltipContent)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+        this.tooltip.transition().duration(200).style("opacity", 0.9);
+        this.tooltip.html(tooltipContent).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px");
     }
 
     /**
@@ -210,9 +203,7 @@ class MainMap {
      * @param {Event} event - Mouse event
      */
     handleMouseMove(event) {
-        this.tooltip
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+        this.tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px");
     }
 
     /**
@@ -222,13 +213,8 @@ class MainMap {
      * @param {Element} element - DOM element
      */
     handleMouseOut(event, d, element) {
-        d3.select(element).transition()
-            .duration(50)
-            .attr("fill-opacity", 1);
-
-        this.tooltip.transition()
-            .duration(50)
-            .style("opacity", 0);
+        d3.select(element).transition().duration(50).attr("fill-opacity", 1);
+        this.tooltip.transition().duration(50).style("opacity", 0);
     }
 
     /**

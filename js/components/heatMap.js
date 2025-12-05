@@ -85,6 +85,14 @@ class HeatMap {
 
         // Clear previous content
         this.$chartContainer.find('svg').remove();
+        this.$chartContainer.find('.no-data-message').remove();
+        this.$chartContainer.find('.select-country-message').remove();
+
+        // If no countries selected, show a message to select countries
+        if (!this.countries || this.countries.length === 0) {
+            this.displaySelectCountryMessage();
+            return;
+        }
 
         // Check if there is data to display
         if (this.data.length === 0) {
@@ -275,6 +283,34 @@ class HeatMap {
                 fontSize: '14px'
             })
             .text('No data available for the selected filters');
+
+        this.$chartContainer.append($message);
+    }
+
+    /**
+     * Display a message prompting user to select a country
+     */
+    displaySelectCountryMessage() {
+        this.$chartContainer.html('');
+        const $message = $('<div>')
+            .addClass('select-country-message')
+            .css({
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                color: '#888',
+                fontSize: '14px',
+                textAlign: 'center',
+                padding: '20px'
+            });
+        
+        $message.append(
+            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Attack Timeline'),
+            $('<p>').text('Select one or more countries on the map to view attack statistics over time'),
+            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('Single year = Monthly heatmap | Year range = Bar chart')
+        );
 
         this.$chartContainer.append($message);
     }

@@ -463,6 +463,12 @@ class SunburstDiagram {
      * Initialize and render the sunburst diagram
      */
     render() {
+        // If no countries selected, show a message to select countries
+        if (!this.countries || this.countries.length === 0) {
+            this.displaySelectCountryMessage();
+            return;
+        }
+
         // Check if there is data to display
         if (this.data.length === 0) {
             this.displayNoDataMessage();
@@ -554,6 +560,37 @@ class SunburstDiagram {
 
         // Use the NoDataMessage component
         NoDataMessage.display(this.container.id, this.currentCountry);
+    }
+
+    /**
+     * Display a message prompting user to select a country
+     */
+    displaySelectCountryMessage() {
+        // Clear previous content
+        d3.select(this.container).html('');
+
+        const $container = $(this.container);
+        const $message = $('<div>')
+            .addClass('select-country-message')
+            .css({
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                color: '#888',
+                fontSize: '14px',
+                textAlign: 'center',
+                padding: '20px'
+            });
+        
+        $message.append(
+            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Terrorist Groups'),
+            $('<p>').text('Select one or more countries on the map to view terrorist group activity'),
+            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('1 country = Detailed hierarchy | Multiple countries = Simplified view')
+        );
+
+        $container.append($message);
     }
 
     /**

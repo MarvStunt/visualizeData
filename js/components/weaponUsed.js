@@ -10,7 +10,7 @@ class WeaponUsed {
     static TOP_WEAPONS_COUNT = 4;
     static PIE_CHART_WEAPONS_LIMIT = 8;
 
-    constructor(containerId, data, type = "weapsubtype1_txt", countries = null, years = null) {
+    constructor(containerId, data, type = "weapsubtype1_txt", countries = null, startYear = null, endYear = null) {
         // Use jQuery selectors
         this.$container = $('#' + containerId).length ? $('#' + containerId) : $('.' + containerId);
         this.container = this.$container.length ? this.$container[0] : null;
@@ -19,8 +19,9 @@ class WeaponUsed {
         this.rawData = data;
         this.type = type;
         this.countries = this.normalizeCountries(countries);
-        this.years = years;
-        this.data = this.filterData(data, this.countries, years);
+        this.startYear = startYear;
+        this.endYear = endYear;
+        this.data = this.filterData(data, this.countries, [startYear, endYear]);
         this.margin = { top: 20, right: 100, bottom: 60, left: 100 };
         this.width = this.$chartContainer.width() || this.$container.width() || 400;
         this.height = this.$chartContainer.height() || this.$container.height() || 300;
@@ -52,27 +53,36 @@ class WeaponUsed {
      * @param {Array|null} years - Year filter array
      * @returns {Array} Filtered data
      */
-    filterData(rawData, countries, years) {
+    filterData(rawData, countries, startYear = null, endYear = null) {
         let filtered = rawData;
 
-        // Filter by year(s) if provided
-        if (years !== null && Array.isArray(years) && years.length > 0) {
-            if (years.length === 1) {
-                const targetYear = parseInt(years[0]);
-                filtered = filtered.filter(d => parseInt(d.iyear) === targetYear);
-            } else if (years.length === 2) {
-                const startYear = Math.min(parseInt(years[0]), parseInt(years[1]));
-                const endYear = Math.max(parseInt(years[0]), parseInt(years[1]));
-                filtered = filtered.filter(d => {
-                    const year = parseInt(d.iyear);
-                    return year >= startYear && year <= endYear;
-                });
-            }
-        }
-
-        // Filter by countries
+        // Filter by countries - only include specified countries
         if (countries && countries.length > 0) {
             filtered = filtered.filter(d => countries.includes(d.country_txt));
+        }
+
+        // Filter by year range if provided
+        if (startYear !== null || endYear !== null) {
+            const start = startYear !== null ? parseInt(startYear) : null;
+            const end = endYear !== null ? parseInt(endYear) : null;
+
+            filtered = filtered.filter(d => {
+                const year = parseInt(d.iyear);
+
+                // If only startYear is provided, filter to exactly that year
+                if (start !== null && end === null) {
+                    return year === start;
+                }
+
+                // If both years are provided, filter to range
+                if (start !== null && year < start) {
+                    return false;
+                }
+                if (end !== null && year > end) {
+                    return false;
+                }
+                return true;
+            });
         }
 
         return filtered;
@@ -82,6 +92,10 @@ class WeaponUsed {
      * Update dimensions based on container size
      */
     updateDimensions() {
+        // Re-fetch container references in case they were loaded after constructor
+        this.$chartContainer = $('.weaponUsed-chart-container');
+        this.chartContainer = this.$chartContainer.length ? this.$chartContainer[0] : null;
+
         this.width = this.$chartContainer.width() || this.$container.width() || 400;
         this.height = this.$chartContainer.height() || this.$container.height() || 300;
     }
@@ -93,6 +107,8 @@ class WeaponUsed {
         this.$chartContainer.find('svg').remove();
         this.$chartContainer.find('.stacked-chart').remove();
         this.$chartContainer.find('.pie-chart').remove();
+        this.$chartContainer.find('.no-data-message').remove();
+        this.$chartContainer.find('.select-country-message').remove();
         $('#weaponUsed-tooltip').remove();
     }
 
@@ -103,6 +119,13 @@ class WeaponUsed {
         this.updateDimensions();
         this.clearCharts();
 
+        console.log('Pays selectionné', this.countries);
+        // If no countries selected, show a message to select countries
+        if (!this.countries || this.countries.length === 0) {
+            this.displaySelectCountryMessage();
+            return;
+        }
+
         // Check if there is data to display
         if (this.data.length === 0) {
             this.displayNoDataMessage();
@@ -110,11 +133,11 @@ class WeaponUsed {
         }
 
         // If single country selected, show pie chart
-        if (this.countries && this.countries.length === 1) {
+        if (this.countries.length === 1) {
             const weaponStats = this.minifyDataPieChart(this.data, this.type);
             this.renderPieChart(weaponStats, this.countries[0]);
         } else {
-            // Multiple countries or no filter: show stacked bar chart
+            // Multiple countries: show stacked bar chart
             this.renderStackedBarChart(this.minifyDataStackedBarChart(this.data, this.type, this.countries));
         }
     }
@@ -500,18 +523,47 @@ class WeaponUsed {
     }
 
     /**
+     * Display a message prompting user to select a country
+     */
+    displaySelectCountryMessage() {
+        this.$chartContainer.html('');
+        const $message = $('<div>')
+            .addClass('select-country-message')
+            .css({
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                color: '#888',
+                fontSize: '14px',
+                textAlign: 'center',
+                padding: '20px'
+            });
+
+        $message.append(
+            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Weapon Usage'),
+            $('<p>').text('Select one or more countries on the map to view weapon statistics'),
+            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('1 country = Pie chart | Multiple countries = Bar chart')
+        );
+
+        this.$chartContainer.append($message);
+    }
+
+    /**
      * Update filters and re-render
      * @param {String|Array} countries - Country filter
      * @param {Array|null} years - Year filter
      * @param {String} type - Weapon type field to use
      */
-    updateFilters(countries, years = null, type = null) {
+    updateFilters(countries, startYear = null, endYear = null, type = null) {
         this.countries = this.normalizeCountries(countries);
-        this.years = years;
+        this.startYear = startYear;
+        this.endYear = endYear;
         if (type) {
             this.type = type;
         }
-        this.data = this.filterData(this.rawData, this.countries, this.years);
+        this.data = this.filterData(this.rawData, this.countries, this.startYear, this.endYear);
 
         // Clear and re-render
         this.clearCharts();

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./css/components/groupType.css">
     <link rel="stylesheet" href="./css/components/weaponUsed.css">
     <link rel="stylesheet" href="./css/components/heatMap.css">
+    <link rel="stylesheet" href="./css/components/filterCard.css">
 
     <!-- JqueryImport -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -26,15 +27,28 @@
     <script src="./js/theme.js"></script>
     <script src="./js/components/weaponUsed.js"></script>
     <script src="./js/components/noDataMessage.js"></script>
+    <script src="./js/components/filterCard.js"></script>
 
     <!-- Main script -->
     <script src="./js/index.js"></script>
 </head>
 
 <body>
+    <!-- Loader -->
+    <div class="loader-overlay" id="loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Chargement des données...</p>
+        </div>
+    </div>
+
+
     <button id="theme-toggle" title="Toggle dark mode"></button>
     <div class="black-filter hidden" id="black-filter"></div>
     <div class="map-container">
+        <!-- Filter Card here -->
+        <div class="filter-card-container"></div>
+        
         <!-- Global map here -->
         <div class="d3-geomap" id="map"></div>
     </div>
