@@ -162,11 +162,14 @@ class HeatMap {
             .attr('fill', '#d73027')
             .on('mouseover', function (event, d) {
                 d3.select(this).attr('fill', '#a50026');
-                self.showTooltip(event, { name: `Year: ${d.year}`, value: d.attacks });
+                tooltipManager.show({
+                    title: `Year: ${d.year}`,
+                    items: [{ label: 'Attacks', value: d.attacks}]
+                }, event.pageX, event.pageY);
             })
             .on('mouseout', function () {
                 d3.select(this).attr('fill', '#d73027');
-                self.hideTooltip();
+                tooltipManager.hide();
             });
     }
 
@@ -214,11 +217,14 @@ class HeatMap {
             .attr('ry', 4)
             .on('mouseover', function (event, d) {
                 d3.select(this).style('stroke', '#000').style('stroke-width', 2);
-                self.showTooltip(event, { name: monthNames[d.month - 1], value: d.attacks });
+
+                tooltipManager.show({
+                    title: monthNames[d.month - 1],
+                    items: [{ label: 'Attacks', value: d.attacks }]
+                }, event.pageX, event.pageY);
             })
             .on('mouseout', function () {
-                d3.select(this).style('stroke', 'none');
-                self.hideTooltip();
+                tooltipManager.hide();
             });
 
         // Month labels in center of cells
@@ -331,43 +337,5 @@ class HeatMap {
         this.$chartContainer.html('');
         this.svg = null;
         this.render();
-    }
-
-    /**
-     * Show tooltip with data information
-     * @param {Event} event - Mouse event
-     * @param {Object} d - Data object with name and value properties
-     */
-    showTooltip(event, d) {
-        let $tooltip = $('#heatMap-tooltip');
-        if ($tooltip.length === 0) {
-            $tooltip = $('<div>')
-                .attr('id', 'heatMap-tooltip')
-                .css({
-                    position: 'absolute',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    pointerEvents: 'none',
-                    zIndex: '1000'
-                })
-                .appendTo('body');
-        }
-
-        let text = `<strong>${d.name}</strong>`;
-        if (d.value !== undefined) text += `<br/>Attacks: ${d.value}`;
-        $tooltip.html(text).css({
-            left: (event.pageX + 10) + 'px',
-            top: (event.pageY + 10) + 'px'
-        }).show();
-    }
-
-    /**
-     * Hide tooltip
-     */
-    hideTooltip() {
-        $('#heatMap-tooltip').hide();
     }
 }

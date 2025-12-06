@@ -540,11 +540,21 @@ class SunburstDiagram {
             .on('mouseover', function (event, d) {
                 d3.select(this).style('opacity', 1)
                 // Show tooltip
-                self.showTooltip(event, d);
+                
+                tooltipManager.show({
+                    title: d.data.name,
+                    items: [
+                        {label: "Count", value: d.value}
+                    ]
+                }, event.pageX, event.pageY);
             })
             .on('mouseout', function () {
-                d3.select(this).style('opacity', 0.8)
-                self.hideTooltip();
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("d", arc);
+
+                tooltipManager.hide();
             });
 
         // Add click handler for zooming TODO: implement zooming
@@ -663,43 +673,5 @@ class SunburstDiagram {
         d3.select(this.container).html('');
         this.svg = null;
         this.render();
-    }
-
-    /**
-     * Show tooltip with data information
-     * @param {Event} event - Mouse event
-     * @param {Object} d - Data object
-     */
-    showTooltip(event, d) {
-        let $tooltip = $('#sunburst-tooltip');
-        if ($tooltip.length === 0) {
-            $tooltip = $('<div>')
-                .attr('id', 'sunburst-tooltip')
-                .css({
-                    position: 'absolute',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    pointerEvents: 'none',
-                    zIndex: '1000'
-                }).appendTo('body');
-        }
-
-        let text = `<strong>${d.data.name}</strong>`;
-        if (d.value) text += `<br/>Count: ${d.value}`;
-        $tooltip.html(text)
-            .css({
-                left: (event.pageX + 10) + 'px',
-                top: (event.pageY + 10) + 'px'
-            }).show();
-    }
-
-    /**
-     * Hide tooltip
-     */
-    hideTooltip() {
-        $('#sunburst-tooltip').hide();
     }
 }
