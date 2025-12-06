@@ -102,7 +102,7 @@ class MainMap {
     loadWorldMap() {
         const self = this;
         Promise.all([
-            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json"),
+            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"),
         ]).then(([world]) => {
             const countries = topojson.feature(world, world.objects.countries);
             self.g.selectAll("path")
