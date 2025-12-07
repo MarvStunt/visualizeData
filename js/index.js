@@ -113,6 +113,10 @@ dataCSV.then(function (data) {
     function updateComponents(data, countries, startYear, endYear) {
         console.log('Updating components with:', { countries, startYear, endYear });
 
+        if (mainMap) {
+            mainMap.updateFilters(startYear, endYear);
+        }
+
         // Update WeaponUsed
         if (weaponUsed) {
             weaponUsed.updateFilters(countries, startYear, endYear);

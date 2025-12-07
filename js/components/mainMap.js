@@ -4,10 +4,14 @@
  */
 
 class MainMap {
-    constructor(containerId, data, onCountrySelect = null) {
+    constructor(containerId, data, onCountrySelect = null, startYear = null, endYear = null) {
         this.$container = $('#' + containerId);
         this.container = this.$container.length ? this.$container[0] : null;
-        this.data = data;
+        this.startYear = startYear;
+        this.endYear = endYear;
+        this.rawData = data;
+        this.data = this.filterData(this.rawData, startYear, endYear);
+        //this.data = data;
         this.onCountrySelect = onCountrySelect; 
 
         this.width = this.$container.width() || 800;
@@ -49,6 +53,35 @@ class MainMap {
             .domain([0, maxAttacks]);
 
         this.loadWorldMap();
+    }
+
+    /**
+     * Filter data by year range
+     * @param {Array} rawData - Array of data objects
+     * @param {Number|null} startYear - Start year for filtering
+     * @param {Number|null} endYear - End year for filtering
+     * @returns {Array} Filtered data array
+     */
+    filterData(rawData, startYear = null, endYear = null) {
+        let filteredData = rawData;
+
+        if (startYear !== null || endYear !== null) {
+            const start = startYear !== null ? parseInt(startYear) : null;
+            const end = endYear !== null ? parseInt(endYear) : null;
+        
+            filteredData = filteredData.filter(d => {
+                const year = parseInt(d.iyear);
+                // If both years are provided, filter to range
+                if (start !== null && year < start) {
+                    return false;
+                }
+                if (end !== null && year > end) {
+                    return false;
+                }
+                return true;
+            })
+        }
+        return filteredData;
     }
 
     /**
@@ -279,5 +312,12 @@ class MainMap {
         const self = this;
         this.g.selectAll("path")
             .attr("fill", d => self.getCountryFill(d));
+    }
+
+    updateFilters(startYear = null, endYear = null) {
+        this.startYear = startYear;
+        this.endYear = endYear;
+        this.data = this.filterData(this.rawData, this.startYear, this.endYear);
+        this.updateData(this.data);
     }
 }
