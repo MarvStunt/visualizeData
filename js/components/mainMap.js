@@ -314,8 +314,14 @@ class MainMap {
             .attr("fill", d => self.getCountryFill(d));
     }
 
+    /**
+     * 
+     * @param {Number} startYear 
+     * @param  {Number} endYear 
+     */
     updateFilters(startYear = null, endYear = null) {
         this.startYear = startYear;
+        console.log(typeof this.endYear);
         this.endYear = endYear;
         this.data = this.filterData(this.rawData, this.startYear, this.endYear);
         this.updateData(this.data);
