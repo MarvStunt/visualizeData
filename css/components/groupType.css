@@ -1,106 +1,30 @@
-.groupType-container-wrapper {
+/* Chart container and SVG sizing */
+.groupType-container {
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.groupType-chart-container {
     width: 100%;
     height: 100%;
     display: flex;
-    flex-direction: column;
-}
-
-.groupType-controls {
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.groupType-controls label {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 14px;
-    white-space: nowrap;
-}
-
-.groupType-controls input[type="range"] {
-    flex: 1;
-    min-width: 150px;
-    height: 6px;
-    border-radius: 3px;
-    background: #ddd;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-}
-
-.groupType-controls input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #e74c3c;
-    cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: background 0.2s;
-}
-
-.groupType-controls input[type="range"]::-webkit-slider-thumb:hover {
-    background: #c0392b;
-}
-
-.groupType-controls input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: #e74c3c;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: background 0.2s;
-}
-
-.groupType-controls input[type="range"]::-moz-range-thumb:hover {
-    background: #c0392b;
-}
-
-#groupType-percentage {
-    font-weight: 600;
-    color: #e74c3c;
-    min-width: 40px;
-    text-align: right;
-    font-size: 14px;
-}
-
-.groupType-chart {
-    flex: 1;
-    width: 100%;
-    display: flex;
     justify-content: center;
-    align-items: center;
-    background: var(--bg-tertiary);
-    overflow: auto;
 }
+
+.groupType-chart-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Chart title styling */
 
 .sunburst-svg {
-    background: var(--bg-secondary);
-    box-shadow: 0 2px 4px var(--shadow-light);
-}
-
-.slice {
-    cursor: pointer;
-}
-
-.slice path {
-    transition: opacity 0.2s, stroke-width 0.2s;
-}
-
-.slice text {
-    pointer-events: none;
-    font-family: Arial, sans-serif;
-    font-weight: 500;
-}
-
-#sunburst-tooltip {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background-color: red;
 }

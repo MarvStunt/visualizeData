@@ -115,7 +115,7 @@ dataCSV.then(function (data) {
         heatmap.render();
 
         // Sunburst
-        sunburst = new SunburstDiagram('groupType-chart', data, countries, startYear, endYear);
+        sunburst = new SunburstDiagram('groupType-chart-container', data, countries, startYear, endYear);
         sunburst.render();
         sunburst.updateSliderVisibility();
     }

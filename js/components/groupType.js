@@ -1,91 +1,26 @@
 /**
  * Sunburst Diagram Component
  * Data hierarchy: Terrorist group -> number of people implicated -> gun type used -> success rate
+ * Extends BaseChart for common chart functionality
  */
 
-class SunburstDiagram {
+class SunburstDiagram extends BaseChart {
     constructor(containerId, data, country = null, startYear = null, endYear = null) {
-        this.$container = $('#' + containerId);
-        this.container = this.$container.length ? this.$container[0] : null;
-        this.rawData = data;
-        this.startYear = startYear;
-        this.endYear = endYear;
-        // Convert single country string to array, or keep as array if already an array
-        this.countries = this.normalizeCountries(country);
-        this.data = this.filterByCountriesAndDate(data, this.countries, startYear, endYear);
+        // Initialize parent class
+        super(containerId, 'groupType-chart-container', data, country, startYear, endYear);
+        
+        // SunburstDiagram specific properties
         this.currentCountry = country;
         // Determine if simplified hierarchy should be used based on number of countries in filtered data
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         this.groupPercentage = 10;
-        this.width = this.$container.width() || 800;
-        this.height = this.$container.height() || 800;
+        
+        // Recalculate radius after parent dimensions are set
         this.radius = Math.min(this.width, this.height) / 2;
-
-        // D3 selections
-        this.svg = null;
-        this.g = null;
     }
 
     /**
-     * Normalize country input to an array
-     * @param {String|Array|null} country - Single country, array of countries, or null
-     * @returns {Array} Array of countries or empty array if null
-     */
-    normalizeCountries(country) {
-        if (!country || country === '') {
-            return [];
-        }
-        if (Array.isArray(country)) {
-            return country.filter(c => c && c !== '');
-        }
-        return [country];
-    }
-
-    /**
-     * Filter data by countries and date range
-     * @param {Array} rawData - Array of data objects from CSV
-     * @param {Array} countries - Array of country names to filter by
-     * @param {String|Number} startYear - Start year for filtering (null = no limit)
-     * @param {String|Number} endYear - End year for filtering (null = no limit)
-     * @returns {Array} Filtered data
-     */
-    filterByCountriesAndDate(rawData, countries, startYear = null, endYear = null) {
-        let filtered = rawData;
-
-        // Filter by countries - only include specified countries
-        if (countries && countries.length > 0) {
-            filtered = filtered.filter(d => countries.includes(d.country_txt));
-        }
-
-        // Filter by year range if provided
-        if (startYear !== null || endYear !== null) {
-            const start = startYear !== null ? parseInt(startYear) : null;
-            const end = endYear !== null ? parseInt(endYear) : null;
-
-            filtered = filtered.filter(d => {
-                const year = parseInt(d.iyear);
-
-                // If only startYear is provided, filter to exactly that year
-                if (start !== null && end === null) {
-                    return year === start;
-                }
-
-                // If both years are provided, filter to range
-                if (start !== null && year < start) {
-                    return false;
-                }
-                if (end !== null && year > end) {
-                    return false;
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }
-
-    /**
-     * Filter data by country and date range
+     * Filter data by country and date range (specific to SunburstDiagram needs)
      * @param {Array} rawData - Array of data objects from CSV
      * @param {String} country - Country name to filter by
      * @param {String|Number} startYear - Start year for filtering (null = no limit)
@@ -128,7 +63,7 @@ class SunburstDiagram {
     }
 
     /**
-     * Filter data by country
+     * Filter data by country (for single country filtering)
      * @param {Array} rawData - Array of data objects from CSV
      * @param {String} country - Country name to filter by
      * @returns {Array} Filtered data
@@ -465,7 +400,7 @@ class SunburstDiagram {
     render() {
         // If no countries selected, show a message to select countries
         if (!this.countries || this.countries.length === 0) {
-            this.displaySelectCountryMessage();
+            this.displaySelectCountryMessage('Terrorist Groups', 'Select one or more countries on the map to view terrorist group activity');
             return;
         }
 
@@ -484,6 +419,16 @@ class SunburstDiagram {
             .attr('width', this.width)
             .attr('height', this.height)
             .attr('class', 'sunburst-svg');
+
+        // Add title
+        this.svg.append('text')
+            .attr('class', 'chart-title')
+            .attr('x', this.width / 2)
+            .attr('y', 20)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '16px')
+            .style('font-weight', 'bold')
+            .text('Terrorist Groups by Country');
 
         this.g = this.svg.append('g')
             .attr('transform', `translate(${this.width / 2},${this.height / 2})`);
@@ -552,48 +497,6 @@ class SunburstDiagram {
     }
 
     /**
-     * Display a message when no data is available
-     */
-    displayNoDataMessage() {
-        // Clear previous content
-        d3.select(this.container).html('');
-
-        // Use the NoDataMessage component
-        NoDataMessage.display(this.container.id, this.currentCountry);
-    }
-
-    /**
-     * Display a message prompting user to select a country
-     */
-    displaySelectCountryMessage() {
-        // Clear previous content
-        d3.select(this.container).html('');
-
-        const $container = $(this.container);
-        const $message = $('<div>')
-            .addClass('select-country-message')
-            .css({
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#888',
-                fontSize: '14px',
-                textAlign: 'center',
-                padding: '20px'
-            });
-        
-        $message.append(
-            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Terrorist Groups'),
-            $('<p>').text('Select one or more countries on the map to view terrorist group activity'),
-            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('1 country = Detailed hierarchy | Multiple countries = Simplified view')
-        );
-
-        $container.append($message);
-    }
-
-    /**
      * Update the country filter and re-render
      * @param {String|Array} country - New country filter (single country, array of countries, or null)
      * @param {String|Number} startYear - Start year for filtering (optional)
@@ -604,7 +507,7 @@ class SunburstDiagram {
         this.startYear = startYear;
         this.endYear = endYear;
         this.countries = this.normalizeCountries(country);
-        this.data = this.filterByCountriesAndDate(this.rawData, this.countries, startYear, endYear);
+        this.data = this.filterData(this.rawData, this.countries, startYear, endYear);
         // Recalculate simplified hierarchy based on number of countries
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         // Update slider visibility based on simplifiedHierarchy

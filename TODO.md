@@ -1,8 +1,19 @@
 # list of todos 
 
-- moins lag
-- des trucs sur le teco de la carte
-- night mode ?
-- tooltip le meme pour tout le monde et juste on appelle une methode showTooltip(data)
 - animations entrées sorties dans les chart
-- animation d'apparition de la barre du bas
+- README
+
+
+# global
+
+- legende carte
+- plus de filtres si on a pas la flemme
+- repop le loading screen 
+- mettre title dans le html et faire height 80% pour laisser lespace au titre 
+- decalage dans le slider a tester sur un autre pc 
+
+# groupType
+
+- zoom sur une cate
+- modif arme par groupes visées 
+- repop la barre de pourcentage

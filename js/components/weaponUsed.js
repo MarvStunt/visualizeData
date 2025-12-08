@@ -1,9 +1,10 @@
 /**
  * WeaponUsed Component
  * Displays weapon usage statistics - Pie chart for single country, Stacked bar chart for multiple countries
+ * Extends BaseChart for common chart functionality
  */
 
-class WeaponUsed {
+class WeaponUsed extends BaseChart {
     // Static configuration constants
     static BARPLOT_LENGTH_THRESHOLD = 10;
     static STACKED_BARPLOT_LENGTH_THRESHOLD = 5;
@@ -11,118 +12,23 @@ class WeaponUsed {
     static PIE_CHART_WEAPONS_LIMIT = 8;
 
     constructor(containerId, data, type = "weapsubtype1_txt", countries = null, startYear = null, endYear = null) {
-        // Use jQuery selectors
-        this.$container = $('#' + containerId).length ? $('#' + containerId) : $('.' + containerId);
-        this.container = this.$container.length ? this.$container[0] : null;
-        this.$chartContainer = $('.weaponUsed-chart-container');
-        this.chartContainer = this.$chartContainer.length ? this.$chartContainer[0] : null;
-        this.rawData = data;
+        // Initialize parent class
+        super(containerId, 'weaponUsed-chart-container', data, countries, startYear, endYear);
+        
+        // WeaponUsed specific properties
         this.type = type;
-        this.countries = this.normalizeCountries(countries);
-        this.startYear = startYear;
-        this.endYear = endYear;
-        this.data = this.filterData(data, this.countries, [startYear, endYear]);
-        this.margin = { top: 20, right: 100, bottom: 60, left: 100 };
-        this.width = this.$chartContainer.width() || this.$container.width() || 400;
-        this.height = this.$chartContainer.height() || this.$container.height() || 300;
-        this.svg = null;
-        this.g = null;
     }
 
     /**
-     * Normalize countries input to an array
-     * @param {String|Array|null} countries - Single country, array of countries, or null
-     * @returns {Array} Array of countries or empty array if null
-     */
-    normalizeCountries(countries) {
-        if (!countries || countries === '') {
-            return [];
-        }
-
-        if (Array.isArray(countries)) {
-            return countries.filter(c => c && c !== '');
-        }
-
-        return [countries];
-    }
-
-    /**
-     * Filter data by countries and year range
-     * @param {Array} rawData - Array of data objects
-     * @param {Array} countries - Array of country names to filter by
-     * @param {Array|null} years - Year filter array
-     * @returns {Array} Filtered data
-     */
-    filterData(rawData, countries, startYear = null, endYear = null) {
-        let filtered = rawData;
-
-        // Filter by countries - only include specified countries
-        if (countries && countries.length > 0) {
-            filtered = filtered.filter(d => countries.includes(d.country_txt));
-        }
-
-        // Filter by year range if provided
-        if (startYear !== null || endYear !== null) {
-            const start = startYear !== null ? parseInt(startYear) : null;
-            const end = endYear !== null ? parseInt(endYear) : null;
-
-            filtered = filtered.filter(d => {
-                const year = parseInt(d.iyear);
-
-                // If only startYear is provided, filter to exactly that year
-                if (start !== null && end === null) {
-                    return year === start;
-                }
-
-                // If both years are provided, filter to range
-                if (start !== null && year < start) {
-                    return false;
-                }
-                if (end !== null && year > end) {
-                    return false;
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }
-
-    /**
-     * Update dimensions based on container size
-     */
-    updateDimensions() {
-        // Re-fetch container references in case they were loaded after constructor
-        this.$chartContainer = $('.weaponUsed-chart-container');
-        this.chartContainer = this.$chartContainer.length ? this.$chartContainer[0] : null;
-
-        this.width = this.$chartContainer.width() || this.$container.width() || 400;
-        this.height = this.$chartContainer.height() || this.$container.height() || 300;
-    }
-
-    /**
-     * Clear all charts from container
-     */
-    clearCharts() {
-        this.$chartContainer.find('svg').remove();
-        this.$chartContainer.find('.stacked-chart').remove();
-        this.$chartContainer.find('.pie-chart').remove();
-        this.$chartContainer.find('.no-data-message').remove();
-        this.$chartContainer.find('.select-country-message').remove();
-        $('#weaponUsed-tooltip').remove();
-    }
-
-    /**
-     * Initialize and render the chart
+     * Render method - handles rendering based on selected countries
      */
     render() {
         this.updateDimensions();
         this.clearCharts();
 
-        console.log('Pays selectionné', this.countries);
         // If no countries selected, show a message to select countries
         if (!this.countries || this.countries.length === 0) {
-            this.displaySelectCountryMessage();
+            this.displaySelectCountryMessage('Weapon Usage', 'Select one or more countries on the map to view weapon statistics');
             return;
         }
 
@@ -406,6 +312,16 @@ class WeaponUsed {
         this.g = this.svg.append("g")
             .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
+        // Add title
+        this.svg.append("text")
+            .attr("class", "chart-title")
+            .attr("x", containerWidth / 2)
+            .attr("y", 15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .style("font-weight", "bold")
+            .text("Weapon Usage by Country");
+
         // Get all unique weapons across all countries
         const allWeapons = new Set();
         data.forEach(d => {
@@ -503,57 +419,10 @@ class WeaponUsed {
     }
 
     /**
-     * Display a message when no data is available
-     */
-    displayNoDataMessage() {
-        this.$chartContainer.html('');
-        const $message = $('<div>')
-            .addClass('no-data-message')
-            .css({
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#666',
-                fontSize: '14px'
-            })
-            .text('No data available for the selected filters');
-
-        this.$chartContainer.append($message);
-    }
-
-    /**
-     * Display a message prompting user to select a country
-     */
-    displaySelectCountryMessage() {
-        this.$chartContainer.html('');
-        const $message = $('<div>')
-            .addClass('select-country-message')
-            .css({
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#888',
-                fontSize: '14px',
-                textAlign: 'center',
-                padding: '20px'
-            });
-
-        $message.append(
-            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Weapon Usage'),
-            $('<p>').text('Select one or more countries on the map to view weapon statistics'),
-            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('1 country = Pie chart | Multiple countries = Bar chart')
-        );
-
-        this.$chartContainer.append($message);
-    }
-
-    /**
      * Update filters and re-render
      * @param {String|Array} countries - Country filter
-     * @param {Array|null} years - Year filter
+     * @param {Number|null} startYear - Start year for filtering
+     * @param {Number|null} endYear - End year for filtering
      * @param {String} type - Weapon type field to use
      */
     updateFilters(countries, startYear = null, endYear = null, type = null) {
