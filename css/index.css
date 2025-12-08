@@ -27,7 +27,7 @@ body.dark-mode {
 }
 
 
-* {
+.filter-card, #theme-toggle {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -59,6 +59,14 @@ body {
 .d3-geomap {
     width: 100%;
     height: 100%;
+}
+
+.global-tooltip {
+    font-family: Arial, sans-serif;
+    will-change: transform, opacity;
+    pointer-events: none !important;
+    transition: opacity 0.15s ease-out;
+    user-select: none;
 }
 
 .bottom-nav {

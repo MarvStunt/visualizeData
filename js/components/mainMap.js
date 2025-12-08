@@ -4,26 +4,27 @@
  */
 
 class MainMap {
-    constructor(containerId, data, onCountrySelect = null) {
+    constructor(containerId, data, onCountrySelect = null, startYear = null, endYear = null) {
         this.$container = $('#' + containerId);
         this.container = this.$container.length ? this.$container[0] : null;
-        this.data = data;
-        this.onCountrySelect = onCountrySelect; // Callback when country selection changes
+        this.startYear = startYear;
+        this.endYear = endYear;
+        this.rawData = data;
+        this.data = this.filterData(this.rawData, startYear, endYear);
+        //this.data = data;
+        this.onCountrySelect = onCountrySelect; 
 
         this.width = this.$container.width() || 800;
         this.height = this.$container.height() || 600;
 
-        // D3 selections
         this.svg = null;
         this.g = null;
         this.zoom = null;
         this.projection = null;
         this.path = null;
-        this.tooltip = null;
         this.colorScale = null;
         this.attackByCountry = null;
 
-        // Selected countries
         this.selectedCountries = [];
     }
 
@@ -31,22 +32,14 @@ class MainMap {
      * Initialize and render the map
      */
     render() {
-        // Create tooltip
-        this.createTooltip();
-
-        // Setup SVG
         this.svg = d3.select(this.container)
             .append("svg")
             .attr("width", this.width)
             .attr("height", this.height);
 
-        // Create group for map content (for zoom)
         this.g = this.svg.append("g");
-
-        // Setup zoom
         this.setupZoom();
 
-        // Setup projection
         this.projection = d3.geoMercator()
             .scale(150)
             .translate([this.width / 2, this.height / 2]);
@@ -59,27 +52,36 @@ class MainMap {
         this.colorScale = d3.scaleSequential(d3.interpolateReds)
             .domain([0, maxAttacks]);
 
-        // Load and render world map
         this.loadWorldMap();
     }
 
     /**
-     * Create tooltip element
+     * Filter data by year range
+     * @param {Array} rawData - Array of data objects
+     * @param {Number|null} startYear - Start year for filtering
+     * @param {Number|null} endYear - End year for filtering
+     * @returns {Array} Filtered data array
      */
-    createTooltip() {
-        // Remove existing tooltip if any
-        d3.select('.tooltip-map').remove();
+    filterData(rawData, startYear = null, endYear = null) {
+        let filteredData = rawData;
 
-        this.tooltip = d3.select("body").append("div")
-            .attr("class", "tooltip-map")
-            .style("position", "absolute")
-            .style("padding", "10px")
-            .style("background", "rgba(0, 0, 0, 0.8)")
-            .style("color", "white")
-            .style("border-radius", "5px")
-            .style("pointer-events", "none")
-            .style("font-size", "14px")
-            .style("opacity", 0);
+        if (startYear !== null || endYear !== null) {
+            const start = startYear !== null ? parseInt(startYear) : null;
+            const end = endYear !== null ? parseInt(endYear) : null;
+        
+            filteredData = filteredData.filter(d => {
+                const year = parseInt(d.iyear);
+                // If both years are provided, filter to range
+                if (start !== null && year < start) {
+                    return false;
+                }
+                if (end !== null && year > end) {
+                    return false;
+                }
+                return true;
+            })
+        }
+        return filteredData;
     }
 
     /**
@@ -102,7 +104,7 @@ class MainMap {
     loadWorldMap() {
         const self = this;
         Promise.all([
-            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json"),
+            d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json"),
         ]).then(([world]) => {
             const countries = topojson.feature(world, world.objects.countries);
             self.g.selectAll("path")
@@ -181,21 +183,27 @@ class MainMap {
      * @param {Element} element - DOM element
      */
     handleMouseOver(event, d, element) {
-        d3.select(element).transition().duration(200).attr("fill-opacity", 0.7);
+        d3.select(element).attr("fill-opacity", 0.7);
         const countryName = d.properties.name;
         const attacks = this.attackByCountry.get(countryName);
-        let tooltipContent = `<strong>${countryName}</strong>`;
+        
+        const tooltipData = {
+            title: countryName,
+            items: []
+        };
+
         if (attacks) {
             const totalKills = d3.sum(attacks, a => +a.nkill);
             const totalAttacks = attacks.length;
-            tooltipContent += `<br/>Attaques: ${totalAttacks}`;
-            tooltipContent += `<br/>Victimes: ${totalKills}`;
+            tooltipData.items.push(
+                { label: 'Attaques', value: totalAttacks.toLocaleString() },
+                { label: 'Victimes', value: totalKills.toLocaleString() }
+            );
         } else {
-            tooltipContent += `<br/>Aucune donnée`;
+            tooltipData.items.push({ value: 'Aucune donnée' });
         }
 
-        this.tooltip.transition().duration(200).style("opacity", 0.9);
-        this.tooltip.html(tooltipContent).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px");
+        tooltipManager.show(tooltipData, event.pageX, event.pageY);
     }
 
     /**
@@ -203,7 +211,7 @@ class MainMap {
      * @param {Event} event - Mouse event
      */
     handleMouseMove(event) {
-        this.tooltip.style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px");
+        tooltipManager.move(event.pageX, event.pageY);
     }
 
     /**
@@ -213,8 +221,8 @@ class MainMap {
      * @param {Element} element - DOM element
      */
     handleMouseOut(event, d, element) {
-        d3.select(element).transition().duration(50).attr("fill-opacity", 1);
-        this.tooltip.transition().duration(50).style("opacity", 0);
+        d3.select(element).attr("fill-opacity", 1);
+        tooltipManager.hide();
     }
 
     /**
@@ -227,7 +235,6 @@ class MainMap {
         const dx = bounds[1][0] - bounds[0][0];
         const dy = bounds[1][1] - bounds[0][1];
 
-        // Calculate the scale needed
         const scale = 2;
 
         // Calculate center - position country at top of page
@@ -305,5 +312,18 @@ class MainMap {
         const self = this;
         this.g.selectAll("path")
             .attr("fill", d => self.getCountryFill(d));
+    }
+
+    /**
+     * 
+     * @param {Number} startYear 
+     * @param  {Number} endYear 
+     */
+    updateFilters(startYear = null, endYear = null) {
+        this.startYear = startYear;
+        console.log(typeof this.endYear);
+        this.endYear = endYear;
+        this.data = this.filterData(this.rawData, this.startYear, this.endYear);
+        this.updateData(this.data);
     }
 }

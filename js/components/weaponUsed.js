@@ -109,7 +109,6 @@ class WeaponUsed {
         this.$chartContainer.find('.pie-chart').remove();
         this.$chartContainer.find('.no-data-message').remove();
         this.$chartContainer.find('.select-country-message').remove();
-        $('#weaponUsed-tooltip').remove();
     }
 
     /**
@@ -344,13 +343,19 @@ class WeaponUsed {
                     .duration(200)
                     .attr("d", arcHover);
 
-                self.showTooltip(event, {
-                    weaponType: d.data.weaponType,
-                    weaponSubType: d.data.weaponSubType,
-                    count: d.data.count,
-                    kills: d.data.kills,
-                    successRate: d.data.successRate
-                });
+                const formatNumber = d3.format(",");
+                tooltipManager.show({
+                    title: d.data.weaponSubType,
+                    items: [
+                        { label: 'Type', value: d.data.weaponType },
+                        { label: 'Attaques', value: formatNumber(d.data.count) },
+                        { label: 'Victimes', value: formatNumber(d.data.kills) },
+                        { label: 'Taux de réussite', value: d.data.successRate + '%' }
+                    ]
+                }, event.pageX, event.pageY);
+            })
+            .on("mousemove", function (event) {
+                tooltipManager.move(event.pageX, event.pageY);
             })
             .on("mouseout", function () {
                 d3.select(this)
@@ -358,7 +363,7 @@ class WeaponUsed {
                     .duration(200)
                     .attr("d", arc);
 
-                self.hideTooltip();
+                tooltipManager.hide();
             });
 
         // Add percentage labels on slices
@@ -460,18 +465,24 @@ class WeaponUsed {
                 const countryData = d.data.weaponsData[weaponName];
 
                 if (countryData) {
-                    self.showTooltip(event, {
-                        country: d.data.country,
-                        weaponType: countryData.weaponType,
-                        weaponSubType: countryData.weaponSubType,
-                        count: countryData.count,
-                        kills: countryData.kills,
-                        successRate: countryData.successRate
-                    });
+                    const formatNumber = d3.format(",");
+                    tooltipManager.show({
+                        title: countryData.weaponSubType,
+                        items: [
+                            { label: 'Pays', value: d.data.country },
+                            { label: 'Type', value: countryData.weaponType },
+                            { label: 'Attaques', value: formatNumber(countryData.count) },
+                            { label: 'Victimes', value: formatNumber(countryData.kills) },
+                            { label: 'Taux de réussite', value: countryData.successRate + '%' }
+                        ]
+                    }, event.pageX, event.pageY);
                 }
             })
+            .on("mousemove", function (event) {
+                tooltipManager.move(event.pageX, event.pageY);
+            })
             .on("mouseout", function () {
-                self.hideTooltip();
+                tooltipManager.hide();
             });
 
         // Add Y axis (countries)
@@ -572,49 +583,4 @@ class WeaponUsed {
         this.render();
     }
 
-    /**
-     * Show tooltip with data information
-     * @param {Event} event - Mouse event
-     * @param {Object} data - Data object with weapon information
-     */
-    showTooltip(event, data) {
-        let $tooltip = $('#weaponUsed-tooltip');
-        if ($tooltip.length === 0) {
-            $tooltip = $('<div>')
-                .attr('id', 'weaponUsed-tooltip')
-                .css({
-                    position: 'absolute',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: '5px',
-                    fontSize: '12px',
-                    pointerEvents: 'none',
-                    zIndex: '1000'
-                })
-                .appendTo('body');
-        }
-
-        const formatNumber = d3.format(",");
-        let html = '';
-        if (data.country) {
-            html += `<strong>Country:</strong> ${data.country}<br/>`;
-        }
-        html += `<strong>Weapon Type:</strong> ${data.weaponType}<br/>`;
-        html += `<strong>Weapon Sub Type:</strong> ${data.weaponSubType}<br/>`;
-        html += `<strong>Attacks:</strong> ${formatNumber(data.count)}<br/>`;
-        html += `<strong>Kills:</strong> ${formatNumber(data.kills)}<br/>`;
-        html += `<strong>Success Rate:</strong> ${data.successRate}%`;
-        $tooltip.html(html).css({
-            left: (event.pageX + 10) + 'px',
-            top: (event.pageY - 10) + 'px'
-        }).show();
-    }
-
-    /**
-     * Hide tooltip
-     */
-    hideTooltip() {
-        $('#weaponUsed-tooltip').hide();
-    }
 }
