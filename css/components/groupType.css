@@ -1,106 +1,117 @@
-.groupType-container-wrapper {
+/* Chart container and SVG sizing */
+.groupType-container {
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    position: relative;
 }
 
-.groupType-controls {
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+.chart-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
     gap: 12px;
     flex-wrap: wrap;
 }
 
+.groupType-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
 .groupType-controls label {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
     white-space: nowrap;
 }
 
 .groupType-controls input[type="range"] {
-    flex: 1;
-    min-width: 150px;
-    height: 6px;
-    border-radius: 3px;
-    background: #ddd;
+    width: 100px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg-tertiary);
     outline: none;
-    appearance: none;
     -webkit-appearance: none;
+    appearance: none;
 }
 
 .groupType-controls input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: #e74c3c;
+    background: var(--text-primary);
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: background 0.2s;
+    transition: all ease-in-out 0.2s;
 }
 
 .groupType-controls input[type="range"]::-webkit-slider-thumb:hover {
-    background: #c0392b;
+    transform: scale(1.2);
+    box-shadow: 0 0 8px var(--shadow-medium);
 }
 
 .groupType-controls input[type="range"]::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: #e74c3c;
+    background: var(--text-primary);
     cursor: pointer;
     border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: background 0.2s;
+    transition: all ease-in-out 0.2s;
 }
 
 .groupType-controls input[type="range"]::-moz-range-thumb:hover {
-    background: #c0392b;
+    transform: scale(1.2);
+    box-shadow: 0 0 8px var(--shadow-medium);
 }
 
-#groupType-percentage {
-    font-weight: 600;
-    color: #e74c3c;
-    min-width: 40px;
+.groupType-controls span {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 30px;
     text-align: right;
-    font-size: 14px;
 }
 
-.groupType-chart {
+.groupType-chart-container {
     flex: 1;
     width: 100%;
     display: flex;
-    justify-content: center;
     align-items: center;
-    background: var(--bg-tertiary);
-    overflow: auto;
+    justify-content: center;
+    min-height: 0;
 }
 
-.sunburst-svg {
-    background: var(--bg-secondary);
-    box-shadow: 0 2px 4px var(--shadow-light);
+.groupType-chart-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: relative;
 }
 
-.slice {
+#sunburst-zoom-controls {
+    position: absolute;
+    top: 50px;
+    right: 8px;
+    z-index: 1001;
+}
+
+#sunburst-zoom-controls button {
+    padding: 6px 10px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
     cursor: pointer;
-}
-
-.slice path {
-    transition: opacity 0.2s, stroke-width 0.2s;
-}
-
-.slice text {
-    pointer-events: none;
-    font-family: Arial, sans-serif;
-    font-weight: 500;
-}
-
-#sunburst-tooltip {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-size: 12px;
+    font-weight: bold;
 }

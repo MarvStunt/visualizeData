@@ -1,91 +1,30 @@
 /**
  * Sunburst Diagram Component
- * Data hierarchy: Terrorist group -> number of people implicated -> gun type used -> success rate
+ * Data hierarchy: Terrorist group -> number of people implicated -> target type -> success rate
+ * Extends BaseChart for common chart functionality
  */
 
-class SunburstDiagram {
+class SunburstDiagram extends BaseChart {
     constructor(containerId, data, country = null, startYear = null, endYear = null) {
-        this.$container = $('#' + containerId);
-        this.container = this.$container.length ? this.$container[0] : null;
-        this.rawData = data;
-        this.startYear = startYear;
-        this.endYear = endYear;
-        // Convert single country string to array, or keep as array if already an array
-        this.countries = this.normalizeCountries(country);
-        this.data = this.filterByCountriesAndDate(data, this.countries, startYear, endYear);
+        // Initialize parent class
+        super(containerId, 'groupType-chart-container', data, country, startYear, endYear);
+        
+        // SunburstDiagram specific properties
         this.currentCountry = country;
         // Determine if simplified hierarchy should be used based on number of countries in filtered data
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         this.groupPercentage = 10;
-        this.width = this.$container.width() || 800;
-        this.height = this.$container.height() || 800;
+        
+        // Zoom state tracking
+        this.zoomedNode = null;
+        this.zoomHistory = [];
+        
+        // Recalculate radius after parent dimensions are set
         this.radius = Math.min(this.width, this.height) / 2;
-
-        // D3 selections
-        this.svg = null;
-        this.g = null;
     }
 
     /**
-     * Normalize country input to an array
-     * @param {String|Array|null} country - Single country, array of countries, or null
-     * @returns {Array} Array of countries or empty array if null
-     */
-    normalizeCountries(country) {
-        if (!country || country === '') {
-            return [];
-        }
-        if (Array.isArray(country)) {
-            return country.filter(c => c && c !== '');
-        }
-        return [country];
-    }
-
-    /**
-     * Filter data by countries and date range
-     * @param {Array} rawData - Array of data objects from CSV
-     * @param {Array} countries - Array of country names to filter by
-     * @param {String|Number} startYear - Start year for filtering (null = no limit)
-     * @param {String|Number} endYear - End year for filtering (null = no limit)
-     * @returns {Array} Filtered data
-     */
-    filterByCountriesAndDate(rawData, countries, startYear = null, endYear = null) {
-        let filtered = rawData;
-
-        // Filter by countries - only include specified countries
-        if (countries && countries.length > 0) {
-            filtered = filtered.filter(d => countries.includes(d.country_txt));
-        }
-
-        // Filter by year range if provided
-        if (startYear !== null || endYear !== null) {
-            const start = startYear !== null ? parseInt(startYear) : null;
-            const end = endYear !== null ? parseInt(endYear) : null;
-
-            filtered = filtered.filter(d => {
-                const year = parseInt(d.iyear);
-
-                // If only startYear is provided, filter to exactly that year
-                if (start !== null && end === null) {
-                    return year === start;
-                }
-
-                // If both years are provided, filter to range
-                if (start !== null && year < start) {
-                    return false;
-                }
-                if (end !== null && year > end) {
-                    return false;
-                }
-                return true;
-            });
-        }
-
-        return filtered;
-    }
-
-    /**
-     * Filter data by country and date range
+     * Filter data by country and date range (specific to SunburstDiagram needs)
      * @param {Array} rawData - Array of data objects from CSV
      * @param {String} country - Country name to filter by
      * @param {String|Number} startYear - Start year for filtering (null = no limit)
@@ -128,7 +67,7 @@ class SunburstDiagram {
     }
 
     /**
-     * Filter data by country
+     * Filter data by country (for single country filtering)
      * @param {Array} rawData - Array of data objects from CSV
      * @param {String} country - Country name to filter by
      * @returns {Array} Filtered data
@@ -242,6 +181,7 @@ class SunburstDiagram {
 
     /**
      * Build simplified hierarchy: Country -> Terrorist Group -> Success
+     * Supports percentage-based filtering with "Others" category for grouped attacks
      * @param {Array} rawData - Array of data objects from CSV
      * @returns {Object} Hierarchical object for d3.hierarchy
      */
@@ -252,7 +192,30 @@ class SunburstDiagram {
 
         const countryMap = new Map();
 
-        // Group data by country -> group -> success
+        // First pass: count occurrences of each group to enable percentage filtering
+        const groupCounts = new Map();
+        rawData.forEach(d => {
+            if (d.gname === "Unknown" || d.gname === "Undefined") {
+                return;
+            }
+            const groupName = d.gname || "Undefined";
+            groupCounts.set(groupName, (groupCounts.get(groupName) || 0) + 1);
+        });
+
+        // Get top X% of groups by frequency
+        const sortedGroups = Array.from(groupCounts.entries())
+            .sort((a, b) => b[1] - a[1]);
+
+        // If there are less than 5 groups, use all groups; otherwise apply percentage filter
+        let topGroups;
+        if (sortedGroups.length < 5) {
+            topGroups = new Set(sortedGroups.map(entry => entry[0]));
+        } else {
+            const topPercentile = Math.max(1, Math.ceil(sortedGroups.length * (this.groupPercentage / 100)));
+            topGroups = new Set(sortedGroups.slice(0, topPercentile).map(entry => entry[0]));
+        }
+
+        // Second pass: group data by country -> group -> success
         rawData.forEach(d => {
             const country = d.country_txt || "Undefined";
             const groupName = d.gname || "Undefined";
@@ -290,11 +253,14 @@ class SunburstDiagram {
                 root.children.push(countryNode);
             }
 
+            // Determine if this group should be shown individually or grouped as "Others"
+            const displayGroupName = topGroups.has(groupName) ? groupName : "Others";
+
             // Get or create group node within country
-            let groupNode = countryNode.children.find(g => g.name === groupName);
+            let groupNode = countryNode.children.find(g => g.name === displayGroupName);
             if (!groupNode) {
                 groupNode = {
-                    name: groupName,
+                    name: displayGroupName,
                     children: []
                 };
                 countryNode.children.push(groupNode);
@@ -317,7 +283,7 @@ class SunburstDiagram {
     }
 
     /**
-     * Build full hierarchy: Terrorist Group -> numPeople -> gunType -> success
+     * Build full hierarchy: Terrorist Group -> numPeople -> targetType -> success
      * @param {Array} rawData - Array of data objects from CSV
      * @returns {Object} Hierarchical object for d3.hierarchy
      */
@@ -380,7 +346,7 @@ class SunburstDiagram {
             }
 
             const numPeopleRaw = (d.nperps === "-99.0" || !d.nperps) ? "Undefined" : d.nperps;
-            const gunType = d.weaptype1_txt || "Undefined";
+            const targetType = d.targtype1_txt || "Undefined";
             const successRate = d.success;
 
             // Handle success rate: only process if success === 1, skip if 0, warn if missing
@@ -431,24 +397,24 @@ class SunburstDiagram {
                 terroristGroupNode.children.push(numPeopleNode);
             }
 
-            // Get or create gunType within numPeople
-            let gunTypeNode = numPeopleNode.children.find(g => g.name === gunType);
-            if (!gunTypeNode) {
-                gunTypeNode = {
-                    name: gunType,
+            // Get or create targetType within numPeople
+            let targetTypeNode = numPeopleNode.children.find(g => g.name === targetType);
+            if (!targetTypeNode) {
+                targetTypeNode = {
+                    name: targetType,
                     children: []
                 };
-                numPeopleNode.children.push(gunTypeNode);
+                numPeopleNode.children.push(targetTypeNode);
             }
 
-            // Get or create successRate within gunType
-            let successRateNode = gunTypeNode.children.find(s => s.name === successRate);
+            // Get or create successRate within targetType
+            let successRateNode = targetTypeNode.children.find(s => s.name === successRate);
             if (!successRateNode) {
                 successRateNode = {
                     name: successRate,
                     value: 1
                 };
-                gunTypeNode.children.push(successRateNode);
+                targetTypeNode.children.push(successRateNode);
             } else {
                 // Increment the count for this success rate
                 successRateNode.value += 1;
@@ -465,7 +431,7 @@ class SunburstDiagram {
     render() {
         // If no countries selected, show a message to select countries
         if (!this.countries || this.countries.length === 0) {
-            this.displaySelectCountryMessage();
+            this.displaySelectCountryMessage('Terrorist Groups', 'Select one or more countries on the map to view terrorist group activity');
             return;
         }
 
@@ -484,6 +450,15 @@ class SunburstDiagram {
             .attr('width', this.width)
             .attr('height', this.height)
             .attr('class', 'sunburst-svg');
+
+        // Add title
+        this.svg.append('text')
+            .attr('class', 'chart-title')
+            .attr('x', this.width / 2)
+            .attr('y', 20)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '16px')
+            .style('font-weight', 'bold')
 
         this.g = this.svg.append('g')
             .attr('transform', `translate(${this.width / 2},${this.height / 2})`);
@@ -515,7 +490,23 @@ class SunburstDiagram {
         const slices = this.g.selectAll('g')
             .data(hierarchy.descendants())
             .join('g')
-            .attr('class', 'slice');
+            .attr('class', 'slice')
+            .style('opacity', d => {
+                // If zoomed, only show children of the zoomed node
+                if (this.zoomedNode) {
+                    // Show the zoomed node and its descendants
+                    return d === this.zoomedNode || d.parent === this.zoomedNode || 
+                           (d.ancestors && d.ancestors().includes(this.zoomedNode)) ? 1 : 0;
+                }
+                return 1;
+            })
+            .style('pointer-events', d => {
+                if (this.zoomedNode) {
+                    return d === this.zoomedNode || d.parent === this.zoomedNode || 
+                           (d.ancestors && d.ancestors().includes(this.zoomedNode)) ? 'auto' : 'none';
+                }
+                return 'auto';
+            });
 
         // Capture 'this' context for use in event handlers
         const self = this;
@@ -557,50 +548,13 @@ class SunburstDiagram {
                 tooltipManager.hide();
             });
 
-        // Add click handler for zooming TODO: implement zooming
+        // Add click handler for zooming
         slices.on('click', (event, d) => this.clicked(event, d, arc, hierarchy));
-    }
 
-    /**
-     * Display a message when no data is available
-     */
-    displayNoDataMessage() {
-        // Clear previous content
-        d3.select(this.container).html('');
-
-        // Use the NoDataMessage component
-        NoDataMessage.display(this.container.id, this.currentCountry);
-    }
-
-    /**
-     * Display a message prompting user to select a country
-     */
-    displaySelectCountryMessage() {
-        // Clear previous content
-        d3.select(this.container).html('');
-
-        const $container = $(this.container);
-        const $message = $('<div>')
-            .addClass('select-country-message')
-            .css({
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#888',
-                fontSize: '14px',
-                textAlign: 'center',
-                padding: '20px'
-            });
-        
-        $message.append(
-            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Terrorist Groups'),
-            $('<p>').text('Select one or more countries on the map to view terrorist group activity'),
-            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('1 country = Detailed hierarchy | Multiple countries = Simplified view')
-        );
-
-        $container.append($message);
+        // Show zoom controls if zoomed
+        if (this.zoomedNode) {
+            this.showZoomControls();
+        }
     }
 
     /**
@@ -614,11 +568,16 @@ class SunburstDiagram {
         this.startYear = startYear;
         this.endYear = endYear;
         this.countries = this.normalizeCountries(country);
-        this.data = this.filterByCountriesAndDate(this.rawData, this.countries, startYear, endYear);
+        this.data = this.filterData(this.rawData, this.countries, startYear, endYear);
         // Recalculate simplified hierarchy based on number of countries
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         // Update slider visibility based on simplifiedHierarchy
         this.updateSliderVisibility();
+        // Reset zoom state when filters change
+        this.zoomedNode = null;
+        this.zoomHistory = [];
+        // Clear zoom controls
+        $('#sunburst-zoom-controls').remove();
         // Clear previous content (SVG and message)
         d3.select(this.container).html('');
         this.svg = null;
@@ -627,20 +586,14 @@ class SunburstDiagram {
 
     /**
      * Update slider visibility based on hierarchy type and group count
-     * If we select multiple countries, hide the slider
+     * Show slider for both single and multiple countries if there are enough groups
      */
     updateSliderVisibility() {
         const $controlsContainer = $('.groupType-controls');
         const $slider = $('#groupType-slider');
         const $percentageDisplay = $('#groupType-percentage');
 
-        // Hide slider if multiple countries are selected
-        if (this.simplifiedHierarchy) {
-            $controlsContainer.hide();
-            return;
-        }
-
-        // For single country, check group count
+        // Count unique groups across all selected countries
         const uniqueGroups = new Set();
         this.data.forEach(d => {
             if (d.gname && d.gname !== "Unknown" && d.gname !== "Undefined") {
@@ -648,10 +601,8 @@ class SunburstDiagram {
             }
         });
 
-        // Hide slider if less than 5 groups
-        if (uniqueGroups.size < 5) {
-            $controlsContainer.hide();
-        } else {
+        // Show slider if there are 5 or more unique groups
+        if (uniqueGroups.size >= 5) {
             $controlsContainer.show();
 
             // Setup slider event listener using jQuery
@@ -660,6 +611,9 @@ class SunburstDiagram {
                 $percentageDisplay.text(percentage + '%');
                 this.updateGroupPercentage(percentage);
             });
+        } else {
+            // Hide slider if less than 5 groups
+            $controlsContainer.hide();
         }
     }
 
