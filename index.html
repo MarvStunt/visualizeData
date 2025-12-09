@@ -49,6 +49,18 @@
     <div class="map-container">
         <!-- Filter Card here -->
         <div class="filter-card-container"></div>
+
+        <!-- Metric selection here-->
+        <div id="map-metrics">
+            <label>
+                <input type="radio" name="metric" value="attacks" checked>
+                Nombre d'attaques
+            </label>
+            <label>
+                <input type="radio" name="metric" value="kills">
+                Nombre de victimes
+            </label>
+        </div>
         
         <!-- Global map here -->
         <div class="d3-geomap" id="map"></div>

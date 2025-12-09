@@ -86,6 +86,11 @@ dataCSV.then(function (data) {
         });
         mainMap.render();
 
+        // Setup metric radio buttons listener
+        $('input[name="metric"]').on('change', function() {
+            mainMap.setColorMetric($(this).val());
+        });
+
         // Initialize other components with default values
         currentFilters.startYear = 1970;
         currentFilters.endYear = 2017;

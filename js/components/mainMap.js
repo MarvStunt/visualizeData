@@ -11,7 +11,7 @@ class MainMap {
         this.endYear = endYear;
         this.rawData = data;
         this.data = this.filterData(this.rawData, startYear, endYear);
-        //this.data = data;
+        this.colorMetric = "attacks";
         this.onCountrySelect = onCountrySelect; 
 
         this.width = this.$container.width() || 800;
@@ -140,9 +140,15 @@ class MainMap {
     getCountryFill(d) {
         const countryName = d.properties.name;
         const attacks = this.attackByCountry.get(countryName);
+        let value;
         if (attacks && attacks.length > 0) {
-            const totalAttacks = attacks.length;
-            return this.colorScale(totalAttacks);
+            if (this.colorMetric === "attacks") {
+                value = attacks.length;
+            } else {
+                value = d3.sum(attacks, a => +a.nkill);
+            }
+
+            return this.colorScale(value);
         }
         return "#e0e0e0";
     }
@@ -309,9 +315,14 @@ class MainMap {
         this.data = newData;
         this.attackByCountry = d3.group(this.data, d => d.country_txt);
         
-        // Calculate max attacks per country (not total kills)
-        const maxAttacks = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
-        this.colorScale.domain([0, maxAttacks]);
+        // Calculate max value based on current metric
+        let maxValue;
+        if (this.colorMetric === "attacks") {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        } else {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => d3.sum(attacks, a => +a.nkill));
+        }
+        this.colorScale.domain([0, maxValue]);
 
         // Update country fills
         const self = this;
@@ -319,7 +330,7 @@ class MainMap {
             .attr("fill", d => self.getCountryFill(d));
         
         // Update legend with new max value
-        this.updateLegend(maxAttacks);
+        this.updateLegend(maxValue);
     }
 
     /**
@@ -361,14 +372,51 @@ class MainMap {
 
     /**
      * Update legend with new max value
-     * @param {Number} maxAttacks - New maximum number of attacks
+     * @param {Number} maxValue - New maximum value
      */
-    updateLegend(maxAttacks) {
+    updateLegend(maxValue) {
         // Remove old legend
-        d3.selectAll(".legend").remove();
-        d3.selectAll("#legend-gradient").remove();
-        
-        // Add new legend
-        this.addLegend(maxAttacks);
+        $('.map-legend').remove();
+
+        // Determine title based on current metric
+        const title = this.colorMetric === "attacks" ? "Nombre d'attaques" : "Nombre de victimes";
+
+        // Create legend HTML
+        const legendHTML = `
+            <div class="map-legend">
+                <div class="map-legend-title">${title}</div>
+                <div class="map-legend-gradient"></div>
+                <div class="map-legend-values">
+                    <span>0</span>
+                    <span>${maxValue.toLocaleString()}</span>
+                </div>
+            </div>
+        `;
+
+        // Add legend to map container
+        this.$container.parent().append(legendHTML);
+    }
+
+    /**
+     * 
+     * @param {String} metric 
+     */
+    setColorMetric(metric) {
+        this.colorMetric = metric;
+
+        let maxValue;
+        if (metric === "attacks") {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        } else {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => d3.sum(attacks, a => +a.nkill));
+        }
+
+        this.colorScale.domain([0, maxValue]);
+
+        const self = this;
+        this.g.selectAll("path")
+            .attr("fill", d => self.getCountryFill(d));
+
+        this.updateLegend(maxValue);
     }
 }
