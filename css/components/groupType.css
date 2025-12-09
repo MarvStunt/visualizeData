@@ -7,6 +7,7 @@
     height: 100%;
     padding: 0;
     margin: 0;
+    position: relative;
 }
 
 .chart-header {
@@ -94,4 +95,23 @@
     width: 100%;
     height: 100%;
     display: block;
+    position: relative;
+}
+
+#sunburst-zoom-controls {
+    position: absolute;
+    top: 50px;
+    right: 8px;
+    z-index: 1001;
+}
+
+#sunburst-zoom-controls button {
+    padding: 6px 10px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
 }

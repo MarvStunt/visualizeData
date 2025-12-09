@@ -1,6 +1,6 @@
 /**
  * Sunburst Diagram Component
- * Data hierarchy: Terrorist group -> number of people implicated -> gun type used -> success rate
+ * Data hierarchy: Terrorist group -> number of people implicated -> target type -> success rate
  * Extends BaseChart for common chart functionality
  */
 
@@ -14,6 +14,10 @@ class SunburstDiagram extends BaseChart {
         // Determine if simplified hierarchy should be used based on number of countries in filtered data
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         this.groupPercentage = 10;
+        
+        // Zoom state tracking
+        this.zoomedNode = null;
+        this.zoomHistory = [];
         
         // Recalculate radius after parent dimensions are set
         this.radius = Math.min(this.width, this.height) / 2;
@@ -177,6 +181,7 @@ class SunburstDiagram extends BaseChart {
 
     /**
      * Build simplified hierarchy: Country -> Terrorist Group -> Success
+     * Supports percentage-based filtering with "Others" category for grouped attacks
      * @param {Array} rawData - Array of data objects from CSV
      * @returns {Object} Hierarchical object for d3.hierarchy
      */
@@ -187,7 +192,30 @@ class SunburstDiagram extends BaseChart {
 
         const countryMap = new Map();
 
-        // Group data by country -> group -> success
+        // First pass: count occurrences of each group to enable percentage filtering
+        const groupCounts = new Map();
+        rawData.forEach(d => {
+            if (d.gname === "Unknown" || d.gname === "Undefined") {
+                return;
+            }
+            const groupName = d.gname || "Undefined";
+            groupCounts.set(groupName, (groupCounts.get(groupName) || 0) + 1);
+        });
+
+        // Get top X% of groups by frequency
+        const sortedGroups = Array.from(groupCounts.entries())
+            .sort((a, b) => b[1] - a[1]);
+
+        // If there are less than 5 groups, use all groups; otherwise apply percentage filter
+        let topGroups;
+        if (sortedGroups.length < 5) {
+            topGroups = new Set(sortedGroups.map(entry => entry[0]));
+        } else {
+            const topPercentile = Math.max(1, Math.ceil(sortedGroups.length * (this.groupPercentage / 100)));
+            topGroups = new Set(sortedGroups.slice(0, topPercentile).map(entry => entry[0]));
+        }
+
+        // Second pass: group data by country -> group -> success
         rawData.forEach(d => {
             const country = d.country_txt || "Undefined";
             const groupName = d.gname || "Undefined";
@@ -225,11 +253,14 @@ class SunburstDiagram extends BaseChart {
                 root.children.push(countryNode);
             }
 
+            // Determine if this group should be shown individually or grouped as "Others"
+            const displayGroupName = topGroups.has(groupName) ? groupName : "Others";
+
             // Get or create group node within country
-            let groupNode = countryNode.children.find(g => g.name === groupName);
+            let groupNode = countryNode.children.find(g => g.name === displayGroupName);
             if (!groupNode) {
                 groupNode = {
-                    name: groupName,
+                    name: displayGroupName,
                     children: []
                 };
                 countryNode.children.push(groupNode);
@@ -252,7 +283,7 @@ class SunburstDiagram extends BaseChart {
     }
 
     /**
-     * Build full hierarchy: Terrorist Group -> numPeople -> gunType -> success
+     * Build full hierarchy: Terrorist Group -> numPeople -> targetType -> success
      * @param {Array} rawData - Array of data objects from CSV
      * @returns {Object} Hierarchical object for d3.hierarchy
      */
@@ -315,7 +346,7 @@ class SunburstDiagram extends BaseChart {
             }
 
             const numPeopleRaw = (d.nperps === "-99.0" || !d.nperps) ? "Undefined" : d.nperps;
-            const gunType = d.weaptype1_txt || "Undefined";
+            const targetType = d.targtype1_txt || "Undefined";
             const successRate = d.success;
 
             // Handle success rate: only process if success === 1, skip if 0, warn if missing
@@ -366,24 +397,24 @@ class SunburstDiagram extends BaseChart {
                 terroristGroupNode.children.push(numPeopleNode);
             }
 
-            // Get or create gunType within numPeople
-            let gunTypeNode = numPeopleNode.children.find(g => g.name === gunType);
-            if (!gunTypeNode) {
-                gunTypeNode = {
-                    name: gunType,
+            // Get or create targetType within numPeople
+            let targetTypeNode = numPeopleNode.children.find(g => g.name === targetType);
+            if (!targetTypeNode) {
+                targetTypeNode = {
+                    name: targetType,
                     children: []
                 };
-                numPeopleNode.children.push(gunTypeNode);
+                numPeopleNode.children.push(targetTypeNode);
             }
 
-            // Get or create successRate within gunType
-            let successRateNode = gunTypeNode.children.find(s => s.name === successRate);
+            // Get or create successRate within targetType
+            let successRateNode = targetTypeNode.children.find(s => s.name === successRate);
             if (!successRateNode) {
                 successRateNode = {
                     name: successRate,
                     value: 1
                 };
-                gunTypeNode.children.push(successRateNode);
+                targetTypeNode.children.push(successRateNode);
             } else {
                 // Increment the count for this success rate
                 successRateNode.value += 1;
@@ -459,7 +490,23 @@ class SunburstDiagram extends BaseChart {
         const slices = this.g.selectAll('g')
             .data(hierarchy.descendants())
             .join('g')
-            .attr('class', 'slice');
+            .attr('class', 'slice')
+            .style('opacity', d => {
+                // If zoomed, only show children of the zoomed node
+                if (this.zoomedNode) {
+                    // Show the zoomed node and its descendants
+                    return d === this.zoomedNode || d.parent === this.zoomedNode || 
+                           (d.ancestors && d.ancestors().includes(this.zoomedNode)) ? 1 : 0;
+                }
+                return 1;
+            })
+            .style('pointer-events', d => {
+                if (this.zoomedNode) {
+                    return d === this.zoomedNode || d.parent === this.zoomedNode || 
+                           (d.ancestors && d.ancestors().includes(this.zoomedNode)) ? 'auto' : 'none';
+                }
+                return 'auto';
+            });
 
         // Capture 'this' context for use in event handlers
         const self = this;
@@ -491,8 +538,13 @@ class SunburstDiagram extends BaseChart {
                 self.hideTooltip();
             });
 
-        // Add click handler for zooming TODO: implement zooming
+        // Add click handler for zooming
         slices.on('click', (event, d) => this.clicked(event, d, arc, hierarchy));
+
+        // Show zoom controls if zoomed
+        if (this.zoomedNode) {
+            this.showZoomControls();
+        }
     }
 
     /**
@@ -511,6 +563,11 @@ class SunburstDiagram extends BaseChart {
         this.simplifiedHierarchy = this.countries && this.countries.length > 1;
         // Update slider visibility based on simplifiedHierarchy
         this.updateSliderVisibility();
+        // Reset zoom state when filters change
+        this.zoomedNode = null;
+        this.zoomHistory = [];
+        // Clear zoom controls
+        $('#sunburst-zoom-controls').remove();
         // Clear previous content (SVG and message)
         d3.select(this.container).html('');
         this.svg = null;
@@ -519,20 +576,14 @@ class SunburstDiagram extends BaseChart {
 
     /**
      * Update slider visibility based on hierarchy type and group count
-     * If we select multiple countries, hide the slider
+     * Show slider for both single and multiple countries if there are enough groups
      */
     updateSliderVisibility() {
         const $controlsContainer = $('.groupType-controls');
         const $slider = $('#groupType-slider');
         const $percentageDisplay = $('#groupType-percentage');
 
-        // Hide slider if multiple countries are selected
-        if (this.simplifiedHierarchy) {
-            $controlsContainer.hide();
-            return;
-        }
-
-        // For single country, check group count
+        // Count unique groups across all selected countries
         const uniqueGroups = new Set();
         this.data.forEach(d => {
             if (d.gname && d.gname !== "Unknown" && d.gname !== "Undefined") {
@@ -540,10 +591,8 @@ class SunburstDiagram extends BaseChart {
             }
         });
 
-        // Hide slider if less than 5 groups
-        if (uniqueGroups.size < 5) {
-            $controlsContainer.hide();
-        } else {
+        // Show slider if there are 5 or more unique groups
+        if (uniqueGroups.size >= 5) {
             $controlsContainer.show();
 
             // Setup slider event listener using jQuery
@@ -552,6 +601,9 @@ class SunburstDiagram extends BaseChart {
                 $percentageDisplay.text(percentage + '%');
                 this.updateGroupPercentage(percentage);
             });
+        } else {
+            // Hide slider if less than 5 groups
+            $controlsContainer.hide();
         }
     }
 
@@ -603,5 +655,124 @@ class SunburstDiagram extends BaseChart {
      */
     hideTooltip() {
         $('#sunburst-tooltip').hide();
+    }
+
+    /**
+     * Handle click on sunburst slice for zooming
+     * @param {Event} event - Click event
+     * @param {Object} d - Data object (node)
+     * @param {Function} arc - D3 arc generator
+     * @param {Object} hierarchy - D3 hierarchy object
+     */
+    clicked(event, d, arc, hierarchy) {
+        // Don't zoom on root
+        if (!d.parent) return;
+
+        // Prevent event propagation
+        event.stopPropagation();
+
+        // Track zoom state
+        this.zoomHistory.push(this.zoomedNode);
+        this.zoomedNode = d;
+
+        // Calculate new angles and radii for the zoom
+        const xScale = d3.scaleLinear()
+            .domain([d.x0, d.x1])
+            .range([0, 2 * Math.PI]);
+
+        const yScale = d3.scaleLinear()
+            .domain([d.y0, this.radius])
+            .range([0, this.radius]);
+
+        // Get arc generator for zoom
+        const arcGenerator = d3.arc()
+            .startAngle(node => xScale(node.x0))
+            .endAngle(node => xScale(node.x1))
+            .innerRadius(node => yScale(node.y0))
+            .outerRadius(node => yScale(node.y1));
+
+        // Update paths immediately (no animation)
+        this.g.selectAll('path.arc')
+            .attr('d', arcGenerator);
+
+        // Update opacity to show/hide nodes based on zoom
+        this.g.selectAll('g.slice')
+            .style('opacity', node => {
+                // Show current node and its direct children
+                if (node === d) return 1;
+                if (node.parent === d) return 1;
+                
+                // Check if node is a descendant of zoomed node
+                let current = node;
+                while (current.parent) {
+                    if (current.parent === d) {
+                        return 1;
+                    }
+                    current = current.parent;
+                }
+                return 0;
+            })
+            .style('pointer-events', node => {
+                if (node === d) return 'auto';
+                if (node.parent === d) return 'auto';
+                
+                let current = node;
+                while (current.parent) {
+                    if (current.parent === d) {
+                        return 'auto';
+                    }
+                    current = current.parent;
+                }
+                return 'none';
+            });
+
+        // Show zoom controls
+        this.showZoomControls();
+    }
+
+    /**
+     * Show controls for zoom navigation
+     */
+    showZoomControls() {
+        let $controls = $('#sunburst-zoom-controls');
+        if ($controls.length === 0) {
+            // Find the SVG container parent
+            const $svgContainer = $(this.svg.node()).parent();
+            
+            $controls = $('<div>')
+                .attr('id', 'sunburst-zoom-controls')
+                .appendTo($svgContainer);
+        }
+
+        // Clear previous content
+        $controls.html('');
+
+        // Add back button if there's zoom history
+        if (this.zoomHistory.length > 0) {
+            const $backBtn = $('<button>')
+                .text('← Back')
+                .on('click', () => this.zoomOut());
+
+            $controls.append($backBtn);
+        } else {
+            $controls.hide();
+        }
+    }
+
+    /**
+     * Zoom out to parent level or reset zoom
+     */
+    zoomOut() {
+        this.zoomedNode = this.zoomHistory.pop();
+
+        // Remove zoom controls
+        $('#sunburst-zoom-controls').remove();
+
+        // Re-render the chart with the new zoom level
+        // Instead of completely clearing, we could animate the transition
+        // For now, we'll re-render
+        d3.select(this.container).html('');
+        this.svg = null;
+        this.render();
     }
 }
