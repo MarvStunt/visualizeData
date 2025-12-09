@@ -48,11 +48,14 @@ class MainMap {
 
         // Process data
         this.attackByCountry = d3.group(this.data, d => d.country_txt);
-        const maxAttacks = d3.max(this.data, d => +d.nkill);
-        this.colorScale = d3.scaleSequential(d3.interpolateReds)
-            .domain([0, maxAttacks]);
+        const maxAttacks = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        this.colorScale = d3.scalePow()
+            .exponent(0.5)
+            .domain([0, maxAttacks])
+            .range(["#fee5d9", "#a50f15"]);
 
         this.loadWorldMap();
+        this.addLegend(maxAttacks);
     }
 
     /**
@@ -137,8 +140,8 @@ class MainMap {
     getCountryFill(d) {
         const countryName = d.properties.name;
         const attacks = this.attackByCountry.get(countryName);
-        if (attacks) {
-            const totalAttacks = d3.sum(attacks, a => +a.nkill);
+        if (attacks && attacks.length > 0) {
+            const totalAttacks = attacks.length;
             return this.colorScale(totalAttacks);
         }
         return "#e0e0e0";
@@ -305,13 +308,18 @@ class MainMap {
     updateData(newData) {
         this.data = newData;
         this.attackByCountry = d3.group(this.data, d => d.country_txt);
-        const maxAttacks = d3.max(this.data, d => +d.nkill);
+        
+        // Calculate max attacks per country (not total kills)
+        const maxAttacks = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
         this.colorScale.domain([0, maxAttacks]);
 
         // Update country fills
         const self = this;
         this.g.selectAll("path")
             .attr("fill", d => self.getCountryFill(d));
+        
+        // Update legend with new max value
+        this.updateLegend(maxAttacks);
     }
 
     /**
@@ -325,5 +333,42 @@ class MainMap {
         this.endYear = endYear;
         this.data = this.filterData(this.rawData, this.startYear, this.endYear);
         this.updateData(this.data);
+    }
+
+    /**
+     * Add legend to the map
+     * @param {Number} maxAttacks - Maximum number of attacks for scale
+     */
+    addLegend(maxAttacks) {
+        // Remove old legend if exists
+        $('.map-legend').remove();
+
+        // Create legend HTML
+        const legendHTML = `
+            <div class="map-legend">
+                <div class="map-legend-title">Nombre d'attaques</div>
+                <div class="map-legend-gradient"></div>
+                <div class="map-legend-values">
+                    <span>0</span>
+                    <span>${maxAttacks.toLocaleString()}</span>
+                </div>
+            </div>
+        `;
+
+        // Add legend to map container
+        this.$container.parent().append(legendHTML);
+    }
+
+    /**
+     * Update legend with new max value
+     * @param {Number} maxAttacks - New maximum number of attacks
+     */
+    updateLegend(maxAttacks) {
+        // Remove old legend
+        d3.selectAll(".legend").remove();
+        d3.selectAll("#legend-gradient").remove();
+        
+        // Add new legend
+        this.addLegend(maxAttacks);
     }
 }

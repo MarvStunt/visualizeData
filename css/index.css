@@ -299,3 +299,38 @@ body {
     font-size: 18px;
     font-weight: 500;
 }
+
+.map-legend {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    background-color: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: var(--shadow-medium);
+    z-index: 100;
+}
+
+.map-legend-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.map-legend-gradient {
+    width: 180px;
+    height: 20px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: linear-gradient(to right, #fee5d9, #a50f15);
+    margin-bottom: 8px;
+}
+
+.map-legend-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-secondary);
+}
