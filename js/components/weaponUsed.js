@@ -287,7 +287,6 @@ class WeaponUsed extends BaseChart {
             .attr("text-anchor", "middle")
             .attr("font-size", "16px")
             .attr("font-weight", "bold")
-            .text(`Weapon Usage in ${countryName}`);
     }
 
     /**
@@ -320,7 +319,6 @@ class WeaponUsed extends BaseChart {
             .attr("text-anchor", "middle")
             .style("font-size", "16px")
             .style("font-weight", "bold")
-            .text("Weapon Usage by Country");
 
         // Get all unique weapons across all countries
         const allWeapons = new Set();

@@ -69,7 +69,6 @@ class HeatMap extends BaseChart {
             .attr('text-anchor', 'middle')
             .style('font-size', '16px')
             .style('font-weight', 'bold')
-            .text('Attack Timeline');
 
         // Scales
         const xScale = d3.scaleBand()
@@ -138,7 +137,6 @@ class HeatMap extends BaseChart {
             .attr('text-anchor', 'middle')
             .style('font-size', '16px')
             .style('font-weight', 'bold')
-            .text('Monthly Attack Distribution');
 
         this.g = this.svg.append('g').attr('transform', `translate(${this.margin.left},${this.margin.top})`);
         const cols = 4;

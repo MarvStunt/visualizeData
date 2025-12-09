@@ -9,22 +9,89 @@
     margin: 0;
 }
 
+.chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.groupType-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.groupType-controls label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.groupType-controls input[type="range"] {
+    width: 100px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg-tertiary);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.groupType-controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    cursor: pointer;
+    transition: all ease-in-out 0.2s;
+}
+
+.groupType-controls input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 8px var(--shadow-medium);
+}
+
+.groupType-controls input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    cursor: pointer;
+    border: none;
+    transition: all ease-in-out 0.2s;
+}
+
+.groupType-controls input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 8px var(--shadow-medium);
+}
+
+.groupType-controls span {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 30px;
+    text-align: right;
+}
+
 .groupType-chart-container {
+    flex: 1;
     width: 100%;
-    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 0;
 }
 
 .groupType-chart-container svg {
     width: 100%;
     height: 100%;
     display: block;
-}
-
-/* Chart title styling */
-
-.sunburst-svg {
-    background-color: red;
 }

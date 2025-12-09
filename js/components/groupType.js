@@ -428,7 +428,6 @@ class SunburstDiagram extends BaseChart {
             .attr('text-anchor', 'middle')
             .style('font-size', '16px')
             .style('font-weight', 'bold')
-            .text('Terrorist Groups by Country');
 
         this.g = this.svg.append('g')
             .attr('transform', `translate(${this.width / 2},${this.height / 2})`);
