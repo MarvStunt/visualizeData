@@ -531,21 +531,11 @@ class SunburstDiagram extends BaseChart {
             .on('mouseover', function (event, d) {
                 d3.select(this).style('opacity', 1)
                 // Show tooltip
-                
-                tooltipManager.show({
-                    title: d.data.name,
-                    items: [
-                        {label: "Count", value: d.value}
-                    ]
-                }, event.pageX, event.pageY);
+                self.showTooltip(event, d);
             })
             .on('mouseout', function () {
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .attr("d", arc);
-
-                tooltipManager.hide();
+                d3.select(this).style('opacity', 0.8)
+                self.hideTooltip();
             });
 
         // Add click handler for zooming
@@ -628,7 +618,6 @@ class SunburstDiagram extends BaseChart {
         this.svg = null;
         this.render();
     }
-    
     /**
      * Handle click on sunburst slice for zooming
      * @param {Event} event - Click event
