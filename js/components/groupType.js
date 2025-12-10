@@ -628,4 +628,123 @@ class SunburstDiagram extends BaseChart {
         this.svg = null;
         this.render();
     }
+    
+    /**
+     * Handle click on sunburst slice for zooming
+     * @param {Event} event - Click event
+     * @param {Object} d - Data object (node)
+     * @param {Function} arc - D3 arc generator
+     * @param {Object} hierarchy - D3 hierarchy object
+     */
+    clicked(event, d, arc, hierarchy) {
+        // Don't zoom on root
+        if (!d.parent) return;
+
+        // Prevent event propagation
+        event.stopPropagation();
+
+        // Track zoom state
+        this.zoomHistory.push(this.zoomedNode);
+        this.zoomedNode = d;
+
+        // Calculate new angles and radii for the zoom
+        const xScale = d3.scaleLinear()
+            .domain([d.x0, d.x1])
+            .range([0, 2 * Math.PI]);
+
+        const yScale = d3.scaleLinear()
+            .domain([d.y0, this.radius])
+            .range([0, this.radius]);
+
+        // Get arc generator for zoom
+        const arcGenerator = d3.arc()
+            .startAngle(node => xScale(node.x0))
+            .endAngle(node => xScale(node.x1))
+            .innerRadius(node => yScale(node.y0))
+            .outerRadius(node => yScale(node.y1));
+
+        // Update paths immediately (no animation)
+        this.g.selectAll('path.arc')
+            .attr('d', arcGenerator);
+
+        // Update opacity to show/hide nodes based on zoom
+        this.g.selectAll('g.slice')
+            .style('opacity', node => {
+                // Show current node and its direct children
+                if (node === d) return 1;
+                if (node.parent === d) return 1;
+                
+                // Check if node is a descendant of zoomed node
+                let current = node;
+                while (current.parent) {
+                    if (current.parent === d) {
+                        return 1;
+                    }
+                    current = current.parent;
+                }
+                return 0;
+            })
+            .style('pointer-events', node => {
+                if (node === d) return 'auto';
+                if (node.parent === d) return 'auto';
+                
+                let current = node;
+                while (current.parent) {
+                    if (current.parent === d) {
+                        return 'auto';
+                    }
+                    current = current.parent;
+                }
+                return 'none';
+            });
+
+        // Show zoom controls
+        this.showZoomControls();
+    }
+
+    /**
+     * Show controls for zoom navigation
+     */
+    showZoomControls() {
+        let $controls = $('#sunburst-zoom-controls');
+        if ($controls.length === 0) {
+            // Find the SVG container parent
+            const $svgContainer = $(this.svg.node()).parent();
+            
+            $controls = $('<div>')
+                .attr('id', 'sunburst-zoom-controls')
+                .appendTo($svgContainer);
+        }
+
+        // Clear previous content
+        $controls.html('');
+
+        // Add back button if there's zoom history
+        if (this.zoomHistory.length > 0) {
+            const $backBtn = $('<button>')
+                .text('← Back')
+                .on('click', () => this.zoomOut());
+
+            $controls.append($backBtn);
+        } else {
+            $controls.hide();
+        }
+    }
+
+    /**
+     * Zoom out to parent level or reset zoom
+     */
+    zoomOut() {
+        this.zoomedNode = this.zoomHistory.pop();
+
+        // Remove zoom controls
+        $('#sunburst-zoom-controls').remove();
+
+        // Re-render the chart with the new zoom level
+        // Instead of completely clearing, we could animate the transition
+        // For now, we'll re-render
+        d3.select(this.container).html('');
+        this.svg = null;
+        this.render();
+    }
 }
