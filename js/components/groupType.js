@@ -657,6 +657,8 @@ class SunburstDiagram extends BaseChart {
         $('#sunburst-tooltip').hide();
     }
 
+    /* add these methods to main */
+    
     /**
      * Handle click on sunburst slice for zooming
      * @param {Event} event - Click event
