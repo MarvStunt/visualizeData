@@ -173,8 +173,6 @@ class MainMap {
             // Select country
             d3.select(element).classed("selected-country", true);
             this.selectedCountries.push(countryName);
-            // Zoom to selected country
-            this.zoomToCountry(d);
         }
 
         d3.select(element).attr("stroke", newColor);
@@ -232,48 +230,6 @@ class MainMap {
     handleMouseOut(event, d, element) {
         d3.select(element).attr("fill-opacity", 1);
         tooltipManager.hide();
-    }
-
-    /**
-     * Zoom to a selected country
-     * @param {Object} feature - Country feature data
-     */
-    zoomToCountry(feature) {
-        // Calculate bounds of the country
-        const bounds = d3.geoBounds(feature);
-        const dx = bounds[1][0] - bounds[0][0];
-        const dy = bounds[1][1] - bounds[0][1];
-
-        const scale = 2;
-
-        // Calculate center - position country at top of page
-        const centerX = (bounds[0][0] + bounds[1][0]) / 2;
-        const centerY = (bounds[0][1] + bounds[1][1]) / 2 - dy * 0.5;
-
-        // Apply projection to get pixel coordinates
-        const projectedCenter = this.projection([centerX, centerY]);
-
-        // Calculate transition target with smooth positioning
-        const translate = [
-            this.width / 2 - projectedCenter[0] * scale,
-            this.height / 3 - projectedCenter[1] * scale
-        ];
-        const transform = d3.zoomIdentity
-            .translate(translate[0], translate[1])
-            .scale(scale);
-
-        // Smooth animation
-        const self = this;
-        this.svg.transition()
-            .duration(600)
-            .ease(d3.easeLinear)
-            .on("start", function () {
-                self.svg.style("pointer-events", "none");
-            })
-            .on("end", function () {
-                self.svg.style("pointer-events", "auto");
-            })
-            .call(this.zoom.transform, transform);
     }
 
     /**

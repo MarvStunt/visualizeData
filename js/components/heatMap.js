@@ -1,78 +1,16 @@
 /**
  * HeatMap/BarChart Component
  * Displays attacks over time - Bar chart for date ranges, Heatmap for single year
+ * Extends BaseChart for common chart functionality
  */
 
-class HeatMap {
+class HeatMap extends BaseChart {
     constructor(containerId, data, countries = null, startYear = null, endYear = null) {
-        // Use jQuery selectors - try ID first, then class
-        this.$container = $('#' + containerId).length ? $('#' + containerId) : $('.' + containerId);
-        this.container = this.$container.length ? this.$container[0] : null;
-        this.$chartContainer = $('.heatMap-chart-container');
-        this.chartContainer = this.$chartContainer.length ? this.$chartContainer[0] : null;
-        this.rawData = data;
-        this.startYear = startYear;
-        this.endYear = endYear;
-        this.countries = this.normalizeCountries(countries);
-        this.data = this.filterData(data, this.countries, startYear, endYear);
+        // Initialize parent class
+        super(containerId, 'heatMap-chart-container', data, countries, startYear, endYear);
+        
+        // HeatMap specific dimensions
         this.margin = { top: 20, right: 20, bottom: 40, left: 50 };
-        this.width = this.$chartContainer.width() || this.$container.width() || 400;
-        this.height = this.$chartContainer.height() || this.$container.height() || 300;
-        this.innerWidth = Math.max(0, this.width - this.margin.left - this.margin.right);
-        this.innerHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
-        this.svg = null;
-        this.g = null;
-    }
-
-    /**
-     * Normalize countries input to an array
-     * @param {String|Array|null} countries - Single country, array of countries, or null
-     * @returns {Array} Array of countries or empty array if null
-     */
-    normalizeCountries(countries) {
-        if (!countries || countries === '') {
-            return [];
-        }
-        if (Array.isArray(countries)) {
-            return countries.filter(c => c && c !== '');
-        }
-        return [countries];
-    }
-
-    /**
-     * Filter data by countries and date range
-     * @param {Array} rawData - Array of data objects
-     * @param {Array} countries - Array of country names to filter by
-     * @param {Number|null} startYear - Start year for filtering
-     * @param {Number|null} endYear - End year for filtering
-     * @returns {Array} Filtered data
-     */
-    filterData(rawData, countries, startYear, endYear) {
-        let filtered = rawData;
-
-        // Filter by countries
-        if (countries && countries.length > 0) {
-            const countrySet = new Set(countries);
-            filtered = filtered.filter(d => countrySet.has(d.country_txt));
-        }
-
-        // Filter by year range
-        if (startYear !== null && endYear !== null) {
-            filtered = filtered.filter(d => +d.iyear >= startYear && +d.iyear <= endYear);
-        } else if (startYear !== null) {
-            filtered = filtered.filter(d => +d.iyear === startYear);
-        }
-
-        return filtered;
-    }
-
-    /**
-     * Update dimensions based on container size
-     */
-    updateDimensions() {
-        const containerElement = this.chartContainer || this.container;
-        this.width = (containerElement && containerElement.clientWidth) || 400;
-        this.height = (containerElement && containerElement.clientHeight) || 300;
         this.innerWidth = Math.max(0, this.width - this.margin.left - this.margin.right);
         this.innerHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
     }
@@ -82,15 +20,11 @@ class HeatMap {
      */
     render() {
         this.updateDimensions();
-
-        // Clear previous content
-        this.$chartContainer.find('svg').remove();
-        this.$chartContainer.find('.no-data-message').remove();
-        this.$chartContainer.find('.select-country-message').remove();
+        this.clearCharts();
 
         // If no countries selected, show a message to select countries
         if (!this.countries || this.countries.length === 0) {
-            this.displaySelectCountryMessage();
+            this.displaySelectCountryMessage('Attack Timeline', 'Select one or more countries on the map to view attack statistics over time');
             return;
         }
 
@@ -126,6 +60,15 @@ class HeatMap {
 
         this.g = this.svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+
+        // Add title
+        this.svg.append('text')
+            .attr('class', 'chart-title')
+            .attr('x', this.width / 2)
+            .attr('y', 15)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '16px')
+            .style('font-weight', 'bold')
 
         // Scales
         const xScale = d3.scaleBand()
@@ -188,6 +131,15 @@ class HeatMap {
             .append('svg')
             .attr('width', this.width)
             .attr('height', this.height);
+
+        // Add title
+        this.svg.append('text')
+            .attr('class', 'chart-title')
+            .attr('x', this.width / 2)
+            .attr('y', 15)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '16px')
+            .style('font-weight', 'bold')
 
         this.g = this.svg.append('g').attr('transform', `translate(${this.margin.left},${this.margin.top})`);
         const cols = 4;
@@ -274,54 +226,6 @@ class HeatMap {
     }
 
     /**
-     * Display a message when no data is available
-     */
-    displayNoDataMessage() {
-        this.$chartContainer.html('');
-        const $message = $('<div>')
-            .addClass('no-data-message')
-            .css({
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#666',
-                fontSize: '14px'
-            })
-            .text('No data available for the selected filters');
-
-        this.$chartContainer.append($message);
-    }
-
-    /**
-     * Display a message prompting user to select a country
-     */
-    displaySelectCountryMessage() {
-        this.$chartContainer.html('');
-        const $message = $('<div>')
-            .addClass('select-country-message')
-            .css({
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '100%',
-                color: '#888',
-                fontSize: '14px',
-                textAlign: 'center',
-                padding: '20px'
-            });
-        
-        $message.append(
-            $('<p>').css({ marginBottom: '8px', fontWeight: 'bold' }).text('Attack Timeline'),
-            $('<p>').text('Select one or more countries on the map to view attack statistics over time'),
-            $('<p>').css({ fontSize: '12px', marginTop: '8px', color: '#aaa' }).text('Single year = Monthly heatmap | Year range = Bar chart')
-        );
-
-        this.$chartContainer.append($message);
-    }
-
-    /**
      * Update filters and re-render
      * @param {String|Array} countries - Country filter
      * @param {Number|null} startYear - Start year for filtering
@@ -334,7 +238,7 @@ class HeatMap {
         this.data = this.filterData(this.rawData, this.countries, startYear, endYear);
 
         // Clear and re-render
-        this.$chartContainer.html('');
+        this.clearCharts();
         this.svg = null;
         this.render();
     }

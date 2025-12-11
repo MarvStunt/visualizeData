@@ -1,6 +1,17 @@
 # list of todos 
 
-- des trucs sur le teco de la carte
 - animations entrées sorties dans les chart
-- animation d'apparition de la barre du bas
 - README
+
+
+# global
+
+- legende carte
+- plus de filtres si on a pas la flemme
+- repop le loading screen 
+- decalage dans le slider a tester sur un autre pc 
+
+# groupType
+
+- zoom sur une cate
+- modif arme par groupes visées 
