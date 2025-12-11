@@ -12,7 +12,8 @@ class MainMap {
         this.rawData = data;
         this.data = this.filterData(this.rawData, startYear, endYear);
         this.colorMetric = "attacks";
-        this.onCountrySelect = onCountrySelect; 
+        this.onCountrySelect = onCountrySelect;
+        this.mapLegend = null;
 
         this.width = this.$container.width() || 800;
         this.height = this.$container.height() || 600;
@@ -55,7 +56,7 @@ class MainMap {
             .range(["#fee5d9", "#a50f15"]);
 
         this.loadWorldMap();
-        this.addLegend(maxAttacks);
+        this.updateLegendDisplay(maxAttacks);
     }
 
     /**
@@ -286,7 +287,7 @@ class MainMap {
             .attr("fill", d => self.getCountryFill(d));
         
         // Update legend with new max value
-        this.updateLegend(maxValue);
+        this.updateLegendDisplay(maxValue);
     }
 
     /**
@@ -303,54 +304,21 @@ class MainMap {
     }
 
     /**
-     * Add legend to the map
-     * @param {Number} maxAttacks - Maximum number of attacks for scale
+     * Set the legend component reference
+     * @param {MapLegend} mapLegend - Map Legend component instance
      */
-    addLegend(maxAttacks) {
-        // Remove old legend if exists
-        $('.map-legend').remove();
-
-        // Create legend HTML
-        const legendHTML = `
-            <div class="map-legend">
-                <div class="map-legend-title">Nombre d'attaques</div>
-                <div class="map-legend-gradient"></div>
-                <div class="map-legend-values">
-                    <span>0</span>
-                    <span>${maxAttacks.toLocaleString()}</span>
-                </div>
-            </div>
-        `;
-
-        // Add legend to map container
-        this.$container.parent().append(legendHTML);
+    setLegend(mapLegend) {
+        this.mapLegend = mapLegend;
     }
 
     /**
-     * Update legend with new max value
-     * @param {Number} maxValue - New maximum value
+     * Update legend display with new values
+     * @param {Number} maxValue - Maximum value for the legend
      */
-    updateLegend(maxValue) {
-        // Remove old legend
-        $('.map-legend').remove();
-
-        // Determine title based on current metric
-        const title = this.colorMetric === "attacks" ? "Nombre d'attaques" : "Nombre de victimes";
-
-        // Create legend HTML
-        const legendHTML = `
-            <div class="map-legend">
-                <div class="map-legend-title">${title}</div>
-                <div class="map-legend-gradient"></div>
-                <div class="map-legend-values">
-                    <span>0</span>
-                    <span>${maxValue.toLocaleString()}</span>
-                </div>
-            </div>
-        `;
-
-        // Add legend to map container
-        this.$container.parent().append(legendHTML);
+    updateLegendDisplay(maxValue) {
+        if (this.mapLegend) {
+            this.mapLegend.updateLegend(this.colorMetric, maxValue);
+        }
     }
 
     /**
@@ -373,6 +341,6 @@ class MainMap {
         this.g.selectAll("path")
             .attr("fill", d => self.getCountryFill(d));
 
-        this.updateLegend(maxValue);
+        this.updateLegendDisplay(maxValue);
     }
 }

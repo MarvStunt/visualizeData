@@ -91,9 +91,8 @@
     outline: none;
     -webkit-appearance: none;
     appearance: none;
-    pointer-events: none;
-    z-index: 4;
-
+    pointer-events: all;
+    z-index: 5;
 }
 
 /* WebKit browsers (Chrome, Safari) */
@@ -218,9 +217,9 @@
 }
 
 #filter-slider-min {
-    transform: translate(-10px, 0);
+    transform: translate(-5px, 0);
 }
 
 #filter-slider-max {
-    transform: translate(10px, 0);
+    transform: translate(5px, 0);
 }

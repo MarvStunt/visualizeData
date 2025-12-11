@@ -4,6 +4,8 @@ let sunburst = null;
 let weaponUsed = null;
 let mainMap = null;
 let filterCard = null;
+let mapMetrics = null;
+let mapLegend = null;
 
 // Global data reference
 let globalData = null;
@@ -29,7 +31,7 @@ dataCSV.then(function (data) {
     $(document).ready(function () {
         // Load ajax components with callbacks to initialize after loading
         let componentsLoaded = 0;
-        const totalComponents = 4;
+        const totalComponents = 6;
         function checkAllComponentsLoaded() {
             componentsLoaded++;
             if (componentsLoaded === totalComponents) {
@@ -38,6 +40,8 @@ dataCSV.then(function (data) {
         }
 
         $('.filter-card-container').load('components/filterCard.html', checkAllComponentsLoaded);
+        $('.map-metrics-container').load('components/mapMetrics.html', checkAllComponentsLoaded);
+        $('.map-legend-container').load('components/mapLegend.html', checkAllComponentsLoaded);
         $('.heatMap-container').load('components/heatMap.html', checkAllComponentsLoaded);
         $('.groupType-container').load('components/groupType.html', checkAllComponentsLoaded);
         $('.weaponUsed-container').load('components/weaponUsed.html', checkAllComponentsLoaded);
@@ -84,11 +88,17 @@ dataCSV.then(function (data) {
                 showBottomNav();
             }
         });
+
+        // Initialize Map Legend BEFORE rendering map
+        mapLegend = new MapLegend('map-legend');
+        mainMap.setLegend(mapLegend);
+
+        // NOW render the map
         mainMap.render();
 
-        // Setup metric radio buttons listener
-        $('input[name="metric"]').on('change', function() {
-            mainMap.setColorMetric($(this).val());
+        // Initialize Map Metrics
+        mapMetrics = new MapMetrics('map-metrics', function(metric) {
+            mainMap.setColorMetric(metric);
         });
 
         // Initialize other components with default values

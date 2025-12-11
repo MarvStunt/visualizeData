@@ -1,0 +1,92 @@
+/* ============================================
+   Map Metrics Component Styles
+   ============================================ */
+
+.map-metrics-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 99;
+}
+
+.map-metrics {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    max-width: 280px;
+    width: 280px;
+    position: absolute;
+    top: 280px;
+    left: 20px;
+    background-color: var(--white);
+    z-index: 100;
+}
+
+.map-metrics-header {
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+}
+
+.map-metrics-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Metric Options */
+.map-metrics-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.metric-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.metric-option:hover {
+    background-color: var(--hover-bg);
+}
+
+.metric-option input[type="radio"] {
+    cursor: pointer;
+    margin-right: 10px;
+    accent-color: var(--primary-color);
+}
+
+.metric-option span {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Dark mode support */
+:root.dark-mode .map-metrics {
+    background: var(--dark-bg);
+    color: var(--dark-text);
+}
+
+:root.dark-mode .map-metrics-header {
+    border-bottom-color: var(--dark-border);
+}
+
+:root.dark-mode .map-metrics-header h3 {
+    color: var(--dark-text);
+}
+
+:root.dark-mode .metric-option span {
+    color: var(--dark-text);
+}
+
+:root.dark-mode .metric-option:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
