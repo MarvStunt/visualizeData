@@ -261,9 +261,9 @@ class HeatMap extends BaseChart {
 
         xAxisTop.selectAll('text')
             .attr('text-anchor', 'middle')
-            .attr('transform', 'rotate(-90)')
+            .attr('transform', 'rotate(-60)')
             .attr('dx', '2em')
-            .attr('dy', '1.25em');
+            .attr('dy', '0.75em');
 
         g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('d')));
 
