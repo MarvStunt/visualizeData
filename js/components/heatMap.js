@@ -36,7 +36,8 @@ class HeatMap extends BaseChart {
 
         // Determine which chart type to render
         if (this.startYear !== null && this.endYear !== null && this.startYear !== this.endYear) {
-            this.renderBarChart();
+            //this.renderBarChart();
+            this.renderLineChart();
         } else {
             this.renderHeatmap();
         }
@@ -190,6 +191,136 @@ class HeatMap extends BaseChart {
 
         // Legend
         this.renderLegend(color, minAttacks, maxAttacks);
+    }
+
+    renderLineChart() {
+        const yearField = 'iyear';
+        const countryField = 'country_txt';
+        const container = d3.select(this.chartContainer);
+        container.selectAll('*').remove();
+
+        // select up to 3 countries (either from this.countries or top 3 in data)
+        let countriesSelected = Array.isArray(this.countries) && this.countries.length > 0
+            ? this.countries.slice(0, 3)
+            : [];
+
+        let data = this.data.slice();
+        if (!countriesSelected.length) {
+            const top = Array.from(d3.rollup(data, v => v.length, d => d[countryField]))
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(d => d[0]);
+            countriesSelected = top;
+        }
+        // ensure we filter to selected countries
+        data = data.filter(d => countriesSelected.includes(d[countryField]));
+
+        if (!data.length || !countriesSelected.length) {
+            this.displayNoDataMessage();
+            return;
+        }
+
+        // Aggregate counts per year per country
+        const agg = d3.rollup(data, v => v.length, d => +d[yearField], d => d[countryField]);
+        const years = Array.from(new Set(data.map(d => +d[yearField]))).sort((a, b) => a - b);
+        if (!years.length) {
+            this.displayNoDataMessage();
+            return;
+        }
+
+        // Build series: for each country an array of { year, value }
+        const series = countriesSelected.map(country => {
+            return {
+                key: country,
+                values: years.map(y => ({ year: y, value: (agg.get(y) && agg.get(y).get(country)) || 0 }))
+            };
+        });
+
+        // Dimensions
+        const margin = { top: 30, right: 140, bottom: 40, left: 50 };
+        const width = Math.max(600, container.node().clientWidth || this.width || 800);
+        const height = 360;
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const svg = container.append('svg').attr('width', width).attr('height', height);
+        const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Scales
+        const x = d3.scalePoint().domain(years).range([0, innerWidth]).padding(0.5);
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(series, s => d3.max(s.values, v => v.value)) || 1])
+            .nice()
+            .range([innerHeight, 0]);
+
+        const color = d3.scaleOrdinal().domain(countriesSelected).range(d3.schemeSet2);
+
+        const xAxisTop = g.append('g')
+            .attr('class', 'x axis top')
+            .call(d3.axisTop(x).tickFormat(d3.format('d')));
+
+        xAxisTop.selectAll('text')
+            .attr('text-anchor', 'middle')
+            .attr('transform', 'rotate(-90)')
+            .attr('dx', '2em')
+            .attr('dy', '1.25em');
+
+        g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d3.format('d')));
+
+        // Line generator
+        const line = d3.line()
+            .x(d => x(d.year))
+            .y(d => y(d.value))
+            .curve(d3.curveMonotoneX);
+
+        // Draw lines
+        const countryGroup = g.selectAll('.country')
+            .data(series)
+            .enter().append('g')
+            .attr('class', 'country');
+
+        countryGroup.append('path')
+            .attr('class', 'line')
+            .attr('d', d => line(d.values))
+            .attr('fill', 'none')
+            .attr('stroke', d => color(d.key))
+            .attr('stroke-width', 2);
+
+        // Points with tooltip
+        countryGroup.selectAll('circle')
+            .data(d => d.values.map(v => ({ key: d.key, year: v.year, value: v.value })))
+            .enter().append('circle')
+            .attr('cx', d => x(d.year))
+            .attr('cy', d => y(d.value))
+            .attr('r', 4)
+            .attr('fill', d => color(d.key))
+            .on('mouseover', function (event, d) {
+                d3.select(this).attr('r', 6);
+                if (typeof tooltipManager !== 'undefined') {
+                    tooltipManager.show({
+                        title: `${d.key} — ${d.year}`,
+                        items: [{ label: 'Attacks', value: d.value }]
+                    }, event.pageX, event.pageY);
+                }
+            })
+            .on('mouseout', function () {
+                d3.select(this).attr('r', 4);
+                if (typeof tooltipManager !== 'undefined') {
+                    tooltipManager.hide();
+                }
+            });
+
+        // Legend on the right (countries on the side)
+        const legendX = margin.left + innerWidth + 10;
+        const legendY = margin.top;
+        const legend = svg.append('g').attr('transform', `translate(${legendX}, ${legendY})`);
+
+        countriesSelected.forEach((c, i) => {
+            const ly = i * 22;
+            const lg = legend.append('g').attr('transform', `translate(0, ${ly})`);
+            lg.append('rect').attr('width', 12).attr('height', 12).attr('fill', color(c));
+            lg.append('text').attr('x', 18).attr('y', 10).attr('font-size', 12).text(c);
+        });
     }
 
     /**
