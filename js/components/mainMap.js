@@ -11,8 +11,9 @@ class MainMap {
         this.endYear = endYear;
         this.rawData = data;
         this.data = this.filterData(this.rawData, startYear, endYear);
-        //this.data = data;
-        this.onCountrySelect = onCountrySelect; 
+        this.colorMetric = "attacks";
+        this.onCountrySelect = onCountrySelect;
+        this.mapLegend = null;
 
         this.width = this.$container.width() || 800;
         this.height = this.$container.height() || 600;
@@ -48,11 +49,14 @@ class MainMap {
 
         // Process data
         this.attackByCountry = d3.group(this.data, d => d.country_txt);
-        const maxAttacks = d3.max(this.data, d => +d.nkill);
-        this.colorScale = d3.scaleSequential(d3.interpolateReds)
-            .domain([0, maxAttacks]);
+        const maxAttacks = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        this.colorScale = d3.scalePow()
+            .exponent(0.5)
+            .domain([0, maxAttacks])
+            .range(["#fee5d9", "#a50f15"]);
 
         this.loadWorldMap();
+        this.updateLegendDisplay(maxAttacks);
     }
 
     /**
@@ -137,9 +141,15 @@ class MainMap {
     getCountryFill(d) {
         const countryName = d.properties.name;
         const attacks = this.attackByCountry.get(countryName);
-        if (attacks) {
-            const totalAttacks = d3.sum(attacks, a => +a.nkill);
-            return this.colorScale(totalAttacks);
+        let value;
+        if (attacks && attacks.length > 0) {
+            if (this.colorMetric === "attacks") {
+                value = attacks.length;
+            } else {
+                value = d3.sum(attacks, a => +a.nkill);
+            }
+
+            return this.colorScale(value);
         }
         return "#e0e0e0";
     }
@@ -261,13 +271,23 @@ class MainMap {
     updateData(newData) {
         this.data = newData;
         this.attackByCountry = d3.group(this.data, d => d.country_txt);
-        const maxAttacks = d3.max(this.data, d => +d.nkill);
-        this.colorScale.domain([0, maxAttacks]);
+        
+        // Calculate max value based on current metric
+        let maxValue;
+        if (this.colorMetric === "attacks") {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        } else {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => d3.sum(attacks, a => +a.nkill));
+        }
+        this.colorScale.domain([0, maxValue]);
 
         // Update country fills
         const self = this;
         this.g.selectAll("path")
             .attr("fill", d => self.getCountryFill(d));
+        
+        // Update legend with new max value
+        this.updateLegendDisplay(maxValue);
     }
 
     /**
@@ -281,5 +301,46 @@ class MainMap {
         this.endYear = endYear;
         this.data = this.filterData(this.rawData, this.startYear, this.endYear);
         this.updateData(this.data);
+    }
+
+    /**
+     * Set the legend component reference
+     * @param {MapLegend} mapLegend - Map Legend component instance
+     */
+    setLegend(mapLegend) {
+        this.mapLegend = mapLegend;
+    }
+
+    /**
+     * Update legend display with new values
+     * @param {Number} maxValue - Maximum value for the legend
+     */
+    updateLegendDisplay(maxValue) {
+        if (this.mapLegend) {
+            this.mapLegend.updateLegend(this.colorMetric, maxValue);
+        }
+    }
+
+    /**
+     * 
+     * @param {String} metric 
+     */
+    setColorMetric(metric) {
+        this.colorMetric = metric;
+
+        let maxValue;
+        if (metric === "attacks") {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => attacks.length);
+        } else {
+            maxValue = d3.max(Array.from(this.attackByCountry.values()), attacks => d3.sum(attacks, a => +a.nkill));
+        }
+
+        this.colorScale.domain([0, maxValue]);
+
+        const self = this;
+        this.g.selectAll("path")
+            .attr("fill", d => self.getCountryFill(d));
+
+        this.updateLegendDisplay(maxValue);
     }
 }

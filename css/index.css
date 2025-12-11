@@ -82,7 +82,7 @@ body {
     background-color: var(--bg-secondary);
     border-radius: 20px 20px 0 0;
     box-shadow: 0 -4px 12px var(--shadow-medium);
-    z-index: 10;
+    z-index: 110;
     margin: 0;
     position: absolute;
     bottom: 0;
@@ -126,7 +126,7 @@ body {
     padding: 0;
     transition: all 0.3s ease-in-out;
     border-radius: 10px;
-    z-index: 15;
+    z-index: 120;
 }
 
 .toggle-arrow {
@@ -193,7 +193,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 150;
     transition: all 0.3s ease;
 }
 
@@ -307,4 +307,40 @@ body {
 :root.light-theme .chart-title {
     color: var(--text-primary, #333);
     fill: var(--text-primary, #333);
+}
+
+
+.map-legend {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    background-color: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    box-shadow: var(--shadow-medium);
+    z-index: 100;
+}
+
+.map-legend-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.map-legend-gradient {
+    width: 180px;
+    height: 20px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: linear-gradient(to right, #fee5d9, #a50f15);
+    margin-bottom: 8px;
+}
+
+.map-legend-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-secondary);
 }

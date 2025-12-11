@@ -530,13 +530,22 @@ class SunburstDiagram extends BaseChart {
             .style('opacity', 0.8)
             .on('mouseover', function (event, d) {
                 d3.select(this).style('opacity', 1)
-                // Show tooltip
-                self.showTooltip(event, d);
+                // Calculate tooltip position relative to SVG
+                const svgRect = self.svg.node().getBoundingClientRect();
+                const tooltipX = svgRect.left + event.offsetX;
+                const tooltipY = svgRect.top + event.offsetY;
+                
+                tooltipManager.show({
+                    title: d.data.name,
+                    items: [
+                        {label: "Count", value: d.value}
+                    ]
+                }, tooltipX, tooltipY);
             })
             .on('mouseout', function () {
-                d3.select(this).style('opacity', 0.8)
-                self.hideTooltip();
+                tooltipManager.hide();
             });
+
 
         // Add click handler for zooming
         slices.on('click', (event, d) => this.clicked(event, d, arc, hierarchy));
