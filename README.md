@@ -51,11 +51,49 @@ La mise en page à été pensée de manière à ce que l'utilisateur puisse se c
 
 ## Alex
 
-## Marvin
+## Marvin – Visualisation des Armes Utilisées
 
-## Mateus
+Le composant **Weapon Used** permet d'analyser la répartition des types d'armes employées lors des attaques terroristes. Ce composant adapte dynamiquement sa représentation visuelle en fonction du nombre de pays sélectionnés par l'utilisateur, offrant ainsi deux modes de visualisation complémentaires.
 
-### Mateus – Diagramme Sunburst
+#### 1. Représentation pour un seul pays sélectionné
+
+Lorsqu'un seul pays est sélectionné, les données sont présentées sous forme de **diagramme circulaire**. Cette visualisation met en évidence :
+
+- La distribution proportionnelle des différents types d'armes utilisées
+- Le pourcentage d'utilisation de chaque catégorie d'armes
+- Une représentation intuitive des armes prédominantes dans le pays sélectionné
+
+Pour maintenir une lisibilité optimale, seules les **8 principales catégories d'armes** sont affichées individuellement. Les armes moins fréquentes sont automatiquement regroupées dans une catégorie **Other**, permettant ainsi de concentrer l'analyse sur les tendances principales sans surcharger la visualisation.
+
+#### 2. Représentation pour plusieurs pays sélectionnés
+
+Lorsque plusieurs pays sont sélectionnés, le composant bascule automatiquement vers un **diagramme à barres empilées horizontales** (stacked bar chart). Ce mode de visualisation permet de :
+
+- Comparer directement l'usage des armes entre différents pays
+- Identifier les similitudes et différences dans les arsenaux utilisés
+- Visualiser simultanément la proportion de chaque type d'arme par pays
+
+Dans ce mode, seules les **4 catégories d'armes les plus utilisées globalement** sont représentées de manière distincte, les autres étant regroupées dans la catégorie **Other**. Cette approche facilite la comparaison inter-pays en se concentrant sur les armes les plus significatives statistiquement.
+
+### Interactions et traitement des données
+
+Le composant intègre plusieurs mécanismes pour optimiser l'expérience utilisateur :
+
+- **Adaptation dynamique du graphique**  
+  Le type de visualisation change automatiquement selon le nombre de pays sélectionnés, offrant toujours la représentation la plus pertinente pour l'analyse en cours.
+
+- **Regroupement intelligent des données**  
+  Un algorithme de regroupement dynamique identifie les catégories d'armes principales et agrège les moins fréquentes dans une catégorie « Other », évitant ainsi la fragmentation visuelle tout en préservant l'information globale.
+
+- **Synchronisation avec les filtres**  
+  Le composant est entièrement synchronisé avec le filtre temporel et la sélection de pays :
+  - Les données affichées correspondent exactement à la plage temporelle sélectionnée
+  - La mise à jour est instantanée lors de la sélection ou désélection d'un pays sur la carte
+  
+- **Informations détaillées au survol**  
+  Un système de tooltips interactif affiche au survol des informations complémentaires telles que le nombre exact d'attaques, le nombre de victimes, et le taux de réussite des attaques pour chaque catégorie d'arme.
+
+## Mateus – Diagramme Sunburst
 
 Le diagramme **sunburst** constitue un élément central de la visualisation hiérarchique des données liées aux attaques terroristes. Il est conçu pour permettre une exploration intuitive des dynamiques d’attaque selon différents niveaux d’agrégation. Deux modes de représentation sont proposés selon le nombre de pays sélectionnés sur la carte :
 
