@@ -55,6 +55,50 @@ La mise en page à été pensée de manière à ce que l'utilisateur puisse se c
 
 ## Mateus
 
+### Mateus – Diagramme Sunburst
+
+Le diagramme **sunburst** constitue un élément central de la visualisation hiérarchique des données liées aux attaques terroristes. Il est conçu pour permettre une exploration intuitive des dynamiques d’attaque selon différents niveaux d’agrégation. Deux modes de représentation sont proposés selon le nombre de pays sélectionnés sur la carte :
+
+#### 1. Représentation pour un seul pays sélectionné
+
+Lorsque l’utilisateur sélectionne un seul pays, le sunburst affiche une hiérarchie en quatre niveaux :
+
+- **Organisation attaquante**
+- **Nombre de personnes impliquées dans l’attaque**
+- **Groupe visé**
+- **Succès ou échec de l’attaque**
+
+Cette structure permet d’analyser les tendances propres à chaque organisation dans un pays donné, en mettant en lumière les cibles privilégiées, les modes opératoires et les taux de réussite.
+
+#### 2. Représentation pour plusieurs pays sélectionnés
+
+Lorsque plusieurs pays sont sélectionnés, le sunburst adopte une structure différente :
+
+- **Pays**
+- **Organisation attaquante**
+- **Nombre de succès**
+
+Ce mode permet de comparer les performances et les comportements des groupes terroristes dans différents contextes géographiques, en observant leur taux de réussite relatif.
+
+---
+
+### Interactions et filtres
+
+Plusieurs interactions enrichissent l’expérience utilisateur :
+
+- **Filtrage par pourcentage de groupes**  
+  Un slider permet de définir le pourcentage de groupes terroristes à afficher dans le sunburst.  
+  - Dans le premier mode (un seul pays), les groupes moins actifs sont simplement omis.  
+  - Dans le second mode (plusieurs pays), ils sont regroupés dans une catégorie générique intitulée **« Autres »**.
+
+- **Zoom interactif**  
+  L’utilisateur peut cliquer sur n’importe quelle branche du sunburst pour zoomer et explorer uniquement cette branche et ses enfants, facilitant l’analyse ciblée.
+
+- **Filtrage temporel**  
+  Le diagramme est synchronisé avec le filtre temporel situé en haut de la page.  
+  - Si une **plage d’années** est sélectionnée, le sunburst représente le **cumul des attaques** sur cette période.  
+  - Si une **seule année** est sélectionnée, seules les attaques de cette année sont prises en compte.
+
 ## Erwan
 
 # Sources 
