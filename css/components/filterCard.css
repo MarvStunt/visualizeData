@@ -14,7 +14,7 @@
     background: var(--white);
     border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 2px 8px var(--shadow-light);
+    box-shadow: 0 2px 8px var(--shadow-medium);
     max-width: 350px;
     width: 350px;
     position: absolute;
