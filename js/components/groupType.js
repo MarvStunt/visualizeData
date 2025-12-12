@@ -543,6 +543,7 @@ class SunburstDiagram extends BaseChart {
                 }, tooltipX, tooltipY);
             })
             .on('mouseout', function () {
+                d3.select(this).style('opacity', 0.8)
                 tooltipManager.hide();
             });
 
