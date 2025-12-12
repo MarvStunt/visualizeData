@@ -137,7 +137,26 @@ Plusieurs interactions enrichissent l’expérience utilisateur :
   - Si une **plage d’années** est sélectionnée, le sunburst représente le **cumul des attaques** sur cette période.  
   - Si une **seule année** est sélectionnée, seules les attaques de cette année sont prises en compte.
 
-## Erwan
+## Erwan - Carte du Monde
+
+La carte du monde sert du point d'entrée principal pour l'exporation des données. Elle affiche au départ le nombre total d'attaques terroristes par pays à l'aide d'une graduation de couleurs. Cette graduation est réalisé à l'aide d'une échelle exponentielle pour une meilleure représentation tout en restant honnête et juste par rapport aux données. D'autres échelles ont été testés, tel que linéaire, mais deux pays avec un nombre d'attaques très élevé (Iraq et Afghanistan) faussaient la représentation des autres pays.
+
+### Intéractions et filtres
+
+- **Sélection de pays**  
+  L'utilisateur peut sélectionner un ou plusieurs pays en cliquant dessus. La sélection est mise en évidence par un contour autour du pays. La sélection de pays met à jour les autres composants de la visualisation dans la barre inférieure.
+
+- **Filtrage temporel**
+  La carte est synchronisée avec le filtre temporel en haut de la page. Lorsqu'une plage d'années ou une année spécifique est sélectionnée, la carte met à jour les données affichées en conséquence.
+
+- **Survol d'un pays** 
+  Lorsqu'un utilisateur survole un pays avec la souris, une info-bulle apparaît affichant des informations supplémentaires telles que le nombre total d'attaques et le nombre de victimes dans ce pays.
+
+- **Zoom et déplacement**
+  L'utilisateur peut zoomer et déplacer la carte pour explorer différentes régions du monde plus en détail, lui permettant de mieux visualiser les pays avec un petit territoire, ou simplifier l'utilisation lorsque les autres composants sont affichés.
+
+- **Filtrage de l'attribut représenté**
+  L'utilisateur peut choisir de représenter à l'aide du dégradé de couleur soit le nombre total d'attaques, soit le nombre de victimes à l'aide des boutons radio situés en haut à gauche de la carte. Ceci met à jour la carte et la légende en conséquence.
 
 # Sources 
 
