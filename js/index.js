@@ -109,9 +109,6 @@ dataCSV.then(function (data) {
         // Hide loader after all components are loaded
         hideLoader();
 
-        // Initially show the bottom nav (expanded, visible at startup to initialize sizes)
-        showBottomNav();
-
         // Add keyboard event listener for Escape key
         setupKeyboardEvents();
 
@@ -172,43 +169,12 @@ function changeCountryColor(countryIndex, color) {
         .attr("fill", color);
 }
 
-function updateView() {
-    if ($('.selected-country').length > 0) {
-        $('#bottom-nav').removeClass('hidden');
-    } else {
-        $('#bottom-nav').addClass('hidden');
-    }
-}
 
-// Function to show the bottom navigation panel
-function showBottomNav() {
-    const $bottomNav = $('#bottom-nav');
-    $bottomNav.removeClass('hidden collapsed');
-    $('#black-filter').fadeIn(300);
-    isBottomNavVisible = true;
-}
-
-// Function to hide the bottom navigation panel
-function hideBottomNav() {
-    const $bottomNav = $('#bottom-nav');
-    $bottomNav.addClass('hidden');
-    $('#black-filter').fadeOut(300);
-    isBottomNavVisible = false;
-}
 
 // Function to toggle the bottom navigation panel (collapse/expand)
 function toggleBottomNavCollapse() {
     const $bottomNav = $('#bottom-nav');
     $bottomNav.toggleClass('collapsed');
-}
-
-// Function to toggle the bottom navigation panel (show/hide completely)
-function toggleBottomNav() {
-    if (isBottomNavVisible) {
-        hideBottomNav();
-    } else {
-        showBottomNav();
-    }
 }
 
 // Setup keyboard events (Escape to close)
