@@ -444,15 +444,13 @@ class HeatMap extends BaseChart {
     }
 
     isDarkTheme() {
-        if (window.themeManager && typeof window.themeManager.isDarkMode === 'function') {
-            return window.themeManager.isDarkMode();
+        let theme = localStorage.getItem("theme-preference");
+        if(theme === "light") {
+            return false;
         }
-        if (document.body && document.body.classList.contains('dark-mode')) {
+        if(theme === "dark") {
             return true;
         }
-        return document.documentElement.classList.contains('dark') ||
-            document.body.classList.contains('dark-theme') ||
-            (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
 
     getLegendTextColor() {

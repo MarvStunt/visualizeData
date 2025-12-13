@@ -73,6 +73,7 @@ class ThemeManager {
         } else {
             this.enableDarkMode();
         }
+        heatmap.render()
     }
 
     /**
