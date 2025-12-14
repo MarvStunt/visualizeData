@@ -6,6 +6,12 @@
 - Erwan HAIN
 - Mateus LOPES
 
+## Pré-requis
+- Python 3.x
+- Bibliothèques Python : pandas, numpy (installer via `pip install pandas numpy`)
+- Unzip (pour décompresser les fichiers de données)
+- Un navigateur web moderne (Chrome, Firefox, etc.)
+
 ## Lancement du projet
 1. Cloner le dépôt GitHub :
    ```bash
