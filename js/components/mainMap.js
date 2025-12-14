@@ -204,11 +204,11 @@ class MainMap {
             const totalKills = d3.sum(attacks, a => +a.nkill);
             const totalAttacks = attacks.length;
             tooltipData.items.push(
-                { label: 'Attaques', value: totalAttacks.toLocaleString() },
-                { label: 'Victimes', value: totalKills.toLocaleString() }
+                { label: 'Attacks', value: totalAttacks.toLocaleString() },
+                { label: 'Victims', value: totalKills.toLocaleString() }
             );
         } else {
-            tooltipData.items.push({ value: 'Aucune donnée' });
+            tooltipData.items.push({ value: 'No data available' });
         }
 
         tooltipManager.show(tooltipData, event.pageX, event.pageY);

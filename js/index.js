@@ -21,7 +21,6 @@ let currentFilters = {
 const themeManager = new ThemeManager();
 
 // Track if bottom nav is visible
-let isBottomNavVisible = true;
 let dataCSV = d3.csv("./cleaned_data.csv");
 
 dataCSV.then(function (data) {
@@ -29,6 +28,7 @@ dataCSV.then(function (data) {
     globalData = data;
 
     $(document).ready(function () {
+        toggleBottomNavCollapse();
         // Load ajax components with callbacks to initialize after loading
         let componentsLoaded = 0;
         const totalComponents = 6;
@@ -69,6 +69,11 @@ dataCSV.then(function (data) {
 
         // Initialize Main Map (only once, with callback for country selection)
         mainMap = new MainMap('map', data, function (selectedCountries) {
+            // check is the nav is already visible
+            if ($('#bottom-nav').hasClass('collapsed')) {
+                toggleBottomNavCollapse();
+            }
+
             // Update current filters with selected countries
             currentFilters.countries = selectedCountries;
 
@@ -82,11 +87,6 @@ dataCSV.then(function (data) {
 
             // Update all other components with new country selection
             updateComponents(data, selectedCountries, currentFilters.startYear, currentFilters.endYear);
-
-            // Show bottom nav when a country is selected (if not already visible)
-            if (selectedCountries.length > 0 && !isBottomNavVisible) {
-                showBottomNav();
-            }
         });
 
         // Initialize Map Legend BEFORE rendering map
@@ -163,7 +163,7 @@ function hideLoader() {
     $loader.addClass('hidden');
 }
 
-// Fonction pour changer la couleur d'un pays par son index
+// Function to change a country color by its index
 function changeCountryColor(countryIndex, color) {
     d3.selectAll("svg path").filter((d, i) => i === countryIndex)
         .attr("fill", color);
@@ -182,8 +182,8 @@ function setupKeyboardEvents() {
     $(document).on('keydown', function (event) {
         // Check if Escape key was pressed
         if (event.key === 'Escape' || event.keyCode === 27) {
-            if (isBottomNavVisible) {
-                hideBottomNav();
+            if ($('#bottom-nav').hasClass('collapsed') === false) {
+                toggleBottomNavCollapse();
             }
         }
     });

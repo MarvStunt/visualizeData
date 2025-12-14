@@ -255,9 +255,9 @@ class WeaponUsed extends BaseChart {
                     title: d.data.weaponSubType,
                     items: [
                         { label: 'Type', value: d.data.weaponType },
-                        { label: 'Attaques', value: formatNumber(d.data.count) },
-                        { label: 'Victimes', value: formatNumber(d.data.kills) },
-                        { label: 'Taux de réussite', value: d.data.successRate + '%' }
+                        { label: 'Attacks', value: formatNumber(d.data.count) },
+                        { label: 'Victims', value: formatNumber(d.data.kills) },
+                        { label: 'Success Rate', value: d.data.successRate + '%' }
                     ]
                 }, event.pageX, event.pageY);
             })
@@ -384,11 +384,11 @@ class WeaponUsed extends BaseChart {
                     tooltipManager.show({
                         title: countryData.weaponSubType,
                         items: [
-                            { label: 'Pays', value: d.data.country },
+                            { label: 'Country', value: d.data.country },
                             { label: 'Type', value: countryData.weaponType },
-                            { label: 'Attaques', value: formatNumber(countryData.count) },
-                            { label: 'Victimes', value: formatNumber(countryData.kills) },
-                            { label: 'Taux de réussite', value: countryData.successRate + '%' }
+                            { label: 'Attacks', value: formatNumber(countryData.count) },
+                            { label: 'Victims', value: formatNumber(countryData.kills) },
+                            { label: 'Success Rate', value: countryData.successRate + '%' }
                         ]
                     }, event.pageX, event.pageY);
                 }

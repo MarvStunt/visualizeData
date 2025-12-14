@@ -21,7 +21,7 @@ class MapLegend {
         this.maxValue = maxValue;
 
         // Determine title based on metric
-        const title = metric === "attacks" ? "Nombre d'attaques" : "Nombre de victimes";
+        const title = metric === "attacks" ? "Number of attacks" : "Number of victims";
         
         // Update title
         this.legendTitle.text(title);

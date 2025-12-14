@@ -134,7 +134,7 @@ class HeatMap extends BaseChart {
                     const monthIndex = (monthDatum && monthDatum.month) ? monthDatum.month - 1 : 0;
                     tooltipManager.show({
                         title: `${d.country} — ${monthNames[monthIndex]} ${self.startYear}`,
-                        items: [{ label: 'Attaques', value: d.value }]
+                        items: [{ label: 'Attacks', value: d.value }]
                     }, event.pageX, event.pageY);
                 }
             })
